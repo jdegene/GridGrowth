@@ -559,7 +559,7 @@ class GridBuilder():
     def __init__(self, t_ar, t_names_ar=None, cost_ar=None, terrain_ar=None, weight_ar=None,
                  terrain_rules_dict = None, nan_value=None, weight_method = "add", cost_method = "add", 
                  buffer_kernels_by=None, falloff_type=None, falloff_weight=None, 
-                 optimize_input=True):
+                 optimize_input=False):
         
         # traverse array that gives the initial seeds. Should be of type non-negative int
         self.t_ar = t_ar        
@@ -621,8 +621,8 @@ class GridBuilder():
             gcd = np.gcd.reduce(self.org_values_ar) # greatest common divisor to divide original values by
             self.opt_values_ar = (self.org_values_ar / gcd).astype(int)
         
-        for i, replace_val in enumerate(self.org_values_ar) :
-            self.t_ar = np.where(self.t_ar == replace_val, self.opt_values_ar[i], self.t_ar)
+            for i, replace_val in enumerate(self.org_values_ar) :
+                self.t_ar = np.where(self.t_ar == replace_val, self.opt_values_ar[i], self.t_ar)
         
         self.weight_method = weight_method
         self.cost_method = cost_method 
