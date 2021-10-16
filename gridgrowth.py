@@ -432,7 +432,7 @@ def local_coord_to_global(in_coord, center_coord):
     
     return (new_coord_0, new_coord_1)
 
-def falloff(func_type, dist, value, func_weight=None):
+def falloff(func_type, dist, value, func_weight=None, correct_by=1):
     """ If called, will reduce an input :val: depending on its distance from original kernel
     
     Args:
@@ -453,17 +453,17 @@ def falloff(func_type, dist, value, func_weight=None):
     if func_type == "linear":
         if func_weight is None:
             func_weight = 1
-        ret_val = value - dist * func_weight
+        ret_val = value - dist * (func_weight/correct_by)
     
     elif func_type == "exp":
         if func_weight is None:
             func_weight = 2
-        ret_val = value - dist ** func_weight
+        ret_val = value - dist ** (func_weight/correct_by)
     
     elif func_type == "log":
         if func_weight is None:
             func_weight = math.e
-        ret_val = value - math.log(dist, func_weight)
+        ret_val = value - math.log(dist, (func_weight/correct_by))
     
     else:
         raise ValueError(f"Falloff function must be linear, exp or log but was {func_type}")
@@ -472,7 +472,7 @@ def falloff(func_type, dist, value, func_weight=None):
     
 
 def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
-                   falloff_type=None, falloff_weight=None):
+                   falloff_type=None, falloff_weight=None, correct_by=1):
     """ Add a buffer around initial kernels to force immediate vicinty to belong to kernels
     
     Args:
@@ -482,6 +482,8 @@ def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
         :nan_value:     kernels are all values that are not nan_value
         :in_name_ar:    input name array, names of initial kernel will be updated 
         :in_dist_ar:    distance from initial kernel will be updated
+        :correct_by:    value to correct falloff_weight by. Is the same as gcd if value optimization is enabled
+                        or 1 by default (= no correction). This is necessary to scale falloff_weight along optimized values
     
     Return:
         Updated in_ar, in_name_ar and in_dist_ar
@@ -542,7 +544,8 @@ def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
                                     out_ar[x,y] = falloff(falloff_type, 
                                                           dist,
                                                           kernel_strength,
-                                                          func_weight=falloff_weight)
+                                                          func_weight=falloff_weight,
+                                                          correct_by=correct_by)
                                 org_ar[x,y] = kernel_strength
                                 in_name_ar[x,y] = name
                                 in_dist_ar[x,y] = dist
@@ -614,6 +617,7 @@ class GridBuilder():
         
         # optimize t_ar by reducing strength values so their relative difference remains the same
         # but their absolute value is reduced. This reduces computation time
+        gcd = 1
         self.optimize_input = optimize_input
         if self.optimize_input == True:
             uq_values_ar = np.unique(self.t_ar)
@@ -651,7 +655,8 @@ class GridBuilder():
                                                                                         self.dist_ar, 
                                                                                         by=self.buffer_kernels_by,
                                                                                         falloff_type=self.falloff_type,
-                                                                                        falloff_weight=self.falloff_weight)
+                                                                                        falloff_weight=self.falloff_weight,
+                                                                                        correct_by = gcd)
         
     def iterate_forward(self, how='full', by_amount=1):
         """ Progresses the raster by x steps 
