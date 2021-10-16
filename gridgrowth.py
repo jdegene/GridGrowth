@@ -815,15 +815,15 @@ class GeoGridBuilder(GridBuilder):
                  terrain_rules_dict=terrain_rules_dict, nan_value=nan_value, weight_method=weight_method, cost_method=cost_method, 
                  buffer_kernels_by=buffer_kernels_by, falloff_type=falloff_type, falloff_weight=falloff_weight)
     
-    def save_to_geotiff(self, save_fol, file_name=None, save_name_file=True):
+    def save_to_geotiff(self, save_fol, file_name=None, save_strength_file=True):
         """ Save the current state as a geotiff 
         
         Args:
             :save_fol:          folder to save output to
             :file_name:         specify a filename (without file type ending like .tif)
                                 can be None -> output will be simply named "main.tif"
-            :save_name_file:    True: tries to save the output of the name file if an input path was given
-                                    uses file_name and appends _name_file to it
+            :save_strength_file: True: tries to save the output of the strength file if an input path was given
+                                    uses file_name and appends _strength_file to it
         
         Returns:
             Nothing
@@ -839,24 +839,18 @@ class GeoGridBuilder(GridBuilder):
         
         if file_name is None:
             file_name = "main"
-            name_file_name = "main_name_file"
+            strength_file_name = "main_strength_file"
         else:
             # if filename was given with file ending, replace by single file endin
             file_name = file_name.replace(".tif", "")
-            name_file_name = file_name + "_name_file"
+            strength_file_name  = file_name + "_strength_file"
         
         main_outpath = save_fol + file_name + ".tif"
+        strength_file_outpath = save_fol + strength_file_name + ".tif"
+           
+        array_to_raster(self.t_ar_tiff_fp, self.t_names_ar, main_outpath)
         
-        # before saving, switch optimized values back to original strength values if values were optimized
-        out_ar = self.t_ar.copy()
-        
-        if self.optimize_input == True:
-            for i, replace_val in enumerate(self.opt_values_ar) :
-                out_ar = np.where(out_ar == replace_val, self.org_values_ar[i], out_ar)
-        
-        array_to_raster(self.t_ar_tiff_fp, out_ar, main_outpath)
-        
-        if save_name_file is True and self.t_names_tiff_fp is not None:
-            name_file_outpath = save_fol + name_file_name + ".tif"
-            array_to_raster(self.t_names_tiff_fp, self.t_names_ar, name_file_outpath )
+        if save_strength_file is True:
+            strength_file_outpath = save_fol + strength_file_name + ".tif"
+            array_to_raster(self.t_ar_tiff_fp, self.t_ar, strength_file_outpath )
  
