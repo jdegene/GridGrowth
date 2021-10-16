@@ -81,6 +81,7 @@ The GridBuilder class has the following optional keywords you can use (you can s
 	- "exp": 2
 	- "log": math.e
 
+* **optimize_input** as the number of steps and as such iterations (full traversal over all cells/pixels) is determined by the maxium strength (including all modifiers) a large absolute value here will lead to "empty" iterations where no values are set. If :optimize_output" is true, the strength value are tried to be reduced by determining their greatest common divisor and dividing all kernel strengths by it. An initial kernel setup of (40,50,300) is as such reduced to (4,5,30). The :falloff_weight: is reduced by the same amount.
 
 ## Using GeoTiffs
 
