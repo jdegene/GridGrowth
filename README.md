@@ -39,7 +39,9 @@ Three terms are used to descrive traversing the grid:
 
 ## Options & Keywords
 
-The GridBuilder class has the following optional keywords you can use (you can substitute the following arrays with GeoTiffs if you are using GeoGridBuilder instead). "t_ar" is the initial traversed array with the kernels that you must give in order for the class to work, all other array must have the same dimensions:
+The GridBuilder class has the following optional keywords you can use (you can substitute the following arrays with GeoTiffs if you are using GeoGridBuilder instead). 
+
+* **t_ar** The array containing the kernels and their strengths. Must be Integer type. Corresponding arrays (cost_ar, terrain_ar) must have the exact same dimensions.
 
 * **t_names_ar** is an array that initiates the names/ids of the kernels. If None, the original strength value of the kernel is used as its ID. If not given and two kernels with the same strength meet you will not be able to determine which was the seeding kernel later.
 
