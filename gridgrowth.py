@@ -562,7 +562,7 @@ class GridBuilder():
     def __init__(self, t_ar, t_names_ar=None, cost_ar=None, terrain_ar=None, weight_ar=None,
                  terrain_rules_dict = None, nan_value=None, weight_method = "add", cost_method = "add", 
                  buffer_kernels_by=None, falloff_type=None, falloff_weight=None, 
-                 optimize_input=False):
+                 optimize_input=True):
         
         # traverse array that gives the initial seeds. Should be of type non-negative int
         self.t_ar = t_ar        
