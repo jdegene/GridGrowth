@@ -55,13 +55,13 @@ The GridBuilder class has the following optional keywords you can use (you can s
 	- 'takes_precedence' rules overwrite strength rules, if other cell would be stronger and fill central value 'takes_precedence' and 'only_allowed' can contain overlapping items
 	- 'only_allowed', 'never_allowed' and 'takes_precedence' can have all have lists as items
 
-Example Dictionary:
-```
-terrain_rules_dict = {'only_allowed': {2: 3, 1:0},
-                     'limit_into': [0],
-                     'never_allowed': {3: [2, 1]},
-                     'takes_precedence': {0: 1}}
-```
+	Example Dictionary:
+	```
+	terrain_rules_dict = {'only_allowed': {2:3, 1:0},
+						 'limit_into': [0],
+						 'never_allowed': {3: [2,1]},
+						 'takes_precedence': {0:1}}
+	```
 
 * **weight_ar** can be seen as a general directional effect. Must be a 3x3 array. Imagine as kind of a push factor, if all values in the 3x3 grid are 1 but the top left value is 5, then in all cases values coming from top left are over valued by a factor of 5. This can for example be used for modelling general "wind" effects.
 
