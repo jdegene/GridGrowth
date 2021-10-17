@@ -458,12 +458,12 @@ def falloff(func_type, dist, value, func_weight=None, correct_by=1):
     elif func_type == "exp":
         if func_weight is None:
             func_weight = 2
-        ret_val = value - dist ** (func_weight/correct_by)
+        ret_val = value - dist ** (func_weight)
     
     elif func_type == "log":
         if func_weight is None:
             func_weight = math.e
-        ret_val = value - math.log(dist, (func_weight/correct_by))
+        ret_val = value - math.log(dist, func_weight)
     
     else:
         raise ValueError(f"Falloff function must be linear, exp or log but was {func_type}")
@@ -561,7 +561,7 @@ class GridBuilder():
     
     def __init__(self, t_ar, t_names_ar=None, cost_ar=None, terrain_ar=None, weight_ar=None,
                  terrain_rules_dict = None, nan_value=None, weight_method = "add", cost_method = "add", 
-                 buffer_kernels_by=None, falloff_type=None, falloff_weight=None, 
+                 buffer_kernels_by=None, max_dist=None, falloff_type=None, falloff_weight=None, 
                  optimize_input=True):
         
         # traverse array that gives the initial seeds. Should be of type non-negative int
@@ -631,6 +631,7 @@ class GridBuilder():
         self.weight_method = weight_method
         self.cost_method = cost_method 
         self.buffer_kernels_by = buffer_kernels_by
+        self.max_dist = max_dist
         
         self.falloff_type = falloff_type
         self.falloff_weight = falloff_weight 
@@ -708,6 +709,12 @@ class GridBuilder():
                     continue
                 
                 three_by_three_marr = np.ma.masked_equal(three_by_three_arr, self.nan_value)
+                
+                # if a maximum distance was given, create a masked array that masks all distance violations in 3x3 own
+                if self.max_dist is not None:
+                    three_by_three_dist_arr = get_3x3_array(self.dist_ar, center_coords, self.max_dist)
+                    three_by_three_dist_marr = np.ma.masked_greater(three_by_three_dist_arr, self.max_dist)
+                    three_by_three_marr = three_by_three_marr + three_by_three_dist_marr
                 
                 # add the weight of the center value of the cost array
                 if self.cost_ar is not None:
