@@ -73,17 +73,21 @@ The GridBuilder class has the following optional keywords you can use (you can s
 
 * **buffer_kernels_by** the number of cells around each kernel that are "reserved" by that kernel independent of other close by kernels
 
+* **max_dist** maximum of cells/pixels each kernel is allowed to spread out
+
 * **falloff_type** can be used to make the strength of a kernel diminish over distance. Distance if calculated as number of cells/pixels distance. Current supported falloff types are:
 	- "linear": value - dist \* falloff_weight
 	- "exp": value - dist ^ falloff_weight
 	- "log": math.log(dist, falloff_weight)
 
-* **falloff_weight** is used to calculate :falloff_type:. If None:
+* **falloff_weight** is used to calculate :falloff_type:. Can be float. If None:
 	- "linear": 1
 	- "exp": 2
 	- "log": math.e
 
-* **optimize_input** as the number of steps and as such iterations (full traversal over all cells/pixels) is determined by the maxium strength (including all modifiers) a large absolute value here will lead to "empty" iterations where no values are set. If :optimize_output" is true, the strength value are tried to be reduced by determining their greatest common divisor and dividing all kernel strengths by it. An initial kernel setup of (40,50,300) is as such reduced to (4,5,30). The :falloff_weight: is reduced by the same amount.
+* **optimize_input** as the number of steps and as such iterations (full traversal over all cells/pixels) is determined by the maxium strength (including all modifiers) a large absolute value here will lead to "empty" iterations where no values are set. 
+If :optimize_output" is true, the strength value are tried to be reduced by determining their greatest common divisor and dividing all kernel strengths by it. An initial kernel setup of (40,50,300) is as such reduced to (4,5,30). The :falloff_weight: is reduced by the same amount BUT only supported for linear falloff.
+
 
 ## Using GeoTiffs
 
