@@ -2,6 +2,7 @@
 
 import numpy as np
 import math
+import datetime
 
 def invert_array_input(in_ar, nan_value, max_value=None):
     """ Input arrays :in_ar: higher numbers mean more velocity/pressure 
@@ -617,22 +618,22 @@ class GridBuilder():
         
         # optimize t_ar by reducing strength values so their relative difference remains the same
         # but their absolute value is reduced. This reduces computation time
-        gcd = 1
+        self.gcd = 1
         self.optimize_input = optimize_input
         if self.optimize_input == True:
             uq_values_ar = np.unique(self.t_ar)
             self.org_values_ar = np.delete(uq_values_ar, np.where(uq_values_ar== self.nan_value))
-            gcd = np.gcd.reduce(self.org_values_ar) # greatest common divisor to divide original values by
-            self.opt_values_ar = (self.org_values_ar / gcd).astype(int)
+            self.gcd = np.gcd.reduce(self.org_values_ar) # greatest common divisor to divide original values by
+            self.opt_values_ar = (self.org_values_ar / self.gcd).astype(int)
         
             for i, replace_val in enumerate(self.org_values_ar) :
                 self.t_ar = np.where(self.t_ar == replace_val, self.opt_values_ar[i], self.t_ar)
             
             # adapt cost and weight array equally
             if len(np.unique(self.cost_ar)) > 1:
-                self.cost_ar = (self.cost_ar / gcd).round().astype(int)
+                self.cost_ar = (self.cost_ar / self.gcd).round().astype(int)
             if len(np.unique(self.weight_ar)) > 1:
-                self.weight_ar = (self.weight_ar / gcd).round().astype(int)
+                self.weight_ar = (self.weight_ar / self.gcd).round().astype(int)
         
         self.weight_method = weight_method
         self.cost_method = cost_method 
@@ -663,7 +664,7 @@ class GridBuilder():
                                                                                         by=self.buffer_kernels_by,
                                                                                         falloff_type=self.falloff_type,
                                                                                         falloff_weight=self.falloff_weight,
-                                                                                        correct_by = gcd)
+                                                                                        correct_by = self.gcd)
         
     def iterate_forward(self, how='full', by_amount=1):
         """ Progresses the raster by x steps 
@@ -806,13 +807,14 @@ class GeoGridBuilder(GridBuilder):
     
     def __init__(self, t_ar_tiff_fp, t_names_tiff_fp=None, cost_tiff_fp=None, terrain_tiff_fp=None, weight_tiff_fp=None,
                  terrain_rules_dict=None, nan_value=None, weight_method="add", cost_method="add", 
-                 buffer_kernels_by=None, falloff_type=None, falloff_weight=None):
+                 buffer_kernels_by=None, max_dist=None, falloff_type=None, falloff_weight=None, optimize_input=False):
         
         # load geodata handling functions. Put in try/except to only load once even if method is called multiple times
         try: 
             geotiff_to_array
         except NameError:
             from geo_data_handler import geotiff_to_array
+            
         
         # init paths
         self.t_ar_tiff_fp = t_ar_tiff_fp
@@ -831,7 +833,8 @@ class GeoGridBuilder(GridBuilder):
         # pass arguments to base class
         super().__init__(t_ar, t_names_ar=t_names_ar, cost_ar=cost_ar, terrain_ar=terrain_ar, weight_ar=weight_ar,
                  terrain_rules_dict=terrain_rules_dict, nan_value=nan_value, weight_method=weight_method, cost_method=cost_method, 
-                 buffer_kernels_by=buffer_kernels_by, falloff_type=falloff_type, falloff_weight=falloff_weight)
+                 buffer_kernels_by=buffer_kernels_by, max_dist=max_dist, falloff_type=falloff_type, falloff_weight=falloff_weight,
+                 optimize_input= optimize_input)
     
     def save_to_geotiff(self, save_fol, file_name=None, save_strength_file=True):
         """ Save the current state as a geotiff 
@@ -854,10 +857,10 @@ class GeoGridBuilder(GridBuilder):
         except NameError:
             from geo_data_handler import array_to_raster
 
-        
         if file_name is None:
-            file_name = "main"
-            strength_file_name = "main_strength_file"
+            date_str = datetime.datetime.now().strftime("%Y%m%d%H%M%S") 
+            file_name = "main_" + date_str
+            strength_file_name = "main_strength_file_" + date_str
         else:
             # if filename was given with file ending, replace by single file endin
             file_name = file_name.replace(".tif", "")
