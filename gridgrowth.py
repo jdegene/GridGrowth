@@ -562,7 +562,7 @@ class GridBuilder():
     def __init__(self, t_ar, t_names_ar=None, cost_ar=None, terrain_ar=None, weight_ar=None,
                  terrain_rules_dict = None, nan_value=None, weight_method = "add", cost_method = "add", 
                  buffer_kernels_by=None, max_dist=None, falloff_type=None, falloff_weight=None, 
-                 optimize_input=True):
+                 optimize_input=False):
         
         # traverse array that gives the initial seeds. Should be of type non-negative int
         self.t_ar = t_ar        
@@ -627,6 +627,12 @@ class GridBuilder():
         
             for i, replace_val in enumerate(self.org_values_ar) :
                 self.t_ar = np.where(self.t_ar == replace_val, self.opt_values_ar[i], self.t_ar)
+            
+            # adapt cost and weight array equally
+            if len(np.unique(self.cost_ar)) > 1:
+                self.cost_ar = (self.cost_ar / gcd).round().astype(int)
+            if len(np.unique(self.weight_ar)) > 1:
+                self.weight_ar = (self.weight_ar / gcd).round().astype(int)
         
         self.weight_method = weight_method
         self.cost_method = cost_method 
