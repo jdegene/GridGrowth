@@ -703,6 +703,7 @@ class GridBuilder():
         # for the first iteration, get all coordinates
         array_it = np.nditer(self.t_ar, flags=['multi_index'])
         self.current_coords_set = set([array_it.multi_index for i in array_it])
+
     
     
     def iterate_forward(self, how='full', by_amount=1):
@@ -727,6 +728,9 @@ class GridBuilder():
         
         init_step = self.step
         init_epoch = self.epoch
+        
+        # use this set to elimiate fully blank 3x3 grids so full grid only has to be run once
+        non_blank_coords_set = self.current_coords_set.copy()
         
         # init a set to be filled with new coords. New coords are collected each step through the grid
         # and are populated by neighbouring NoData cells of those that were filled
@@ -758,6 +762,8 @@ class GridBuilder():
                 three_by_three_arr = get_3x3_array(self.t_ar, center_coords, self.nan_value)
                 
                 if len(np.unique(three_by_three_arr)) == 1:
+                    if self.step == 1:
+                        non_blank_coords_set.discard(center_coords)   
                     continue
                 
                 three_by_three_marr = np.ma.masked_equal(three_by_three_arr, self.nan_value)
@@ -829,6 +835,10 @@ class GridBuilder():
                     
                 else:
                     continue
+            
+            # only run EVERY cell in the very first step. During the rest of the first epoch dont run fully empty 3x3 grids again
+            if self.step == 1:
+                self.current_coords_set = non_blank_coords_set 
     
             self.t_ar = set_arr.copy()
             
