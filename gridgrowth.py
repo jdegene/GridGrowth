@@ -182,6 +182,9 @@ def get_possible_max_value(in_ar, nan_val, in_cost_ar=None, in_weight_ar=None,
     in_ar = in_ar.astype(float).copy()
     in_ar[in_ar==nan_val] = np.nan
     
+    if len(np.unique(in_cost_ar)) == 1:
+        in_cost_ar = None
+    
     max_in = np.nanmax(in_ar)
     max_cost = 0 if in_cost_ar is None else np.nanmax(in_cost_ar)
     max_weight = 0 if in_weight_ar is None else np.nanmax(in_weight_ar)
@@ -431,7 +434,9 @@ def local_coord_to_global(in_coord, center_coord):
     new_coord_0 = center_coord[0]  + in_coord[0]-1
     new_coord_1 = center_coord[1]  + in_coord[1]-1
     
-    return (new_coord_0, new_coord_1)
+    # only return valid coordinates, do nothing if coordinates would be negative
+    if new_coord_0 >= 0 and new_coord_1 >= 0:
+        return (new_coord_0, new_coord_1)
 
 
 def falloff(func_type, dist, value, func_weight=None, correct_by=1):
@@ -614,8 +619,10 @@ class GridBuilder():
         # Must have same shape as t_ar
         if cost_ar is not None:
             self.cost_ar = cost_ar
+            self.skip_cost_array = False
         else:
             self.cost_ar = np.ones(self.shape, dtype='int')
+            self.skip_cost_array = True
             #self.cost_method = "multiply" 
         
         # a terrain array can be used to disallow transitions between certain cell types
@@ -671,8 +678,8 @@ class GridBuilder():
         self.falloff_weight = falloff_weight 
         
         self.step = 1 # steps are rolled back to 1 when max value was reached
-        self.iterations = 0 # total iterations, incremented each step
-        self.epoch = 0 # is incremented each time step is rolled over
+        self.iterations = 1 # total iterations, incremented each step
+        self.epoch = 1 # is incremented each time step is rolled over
         
         self.total_max_value = get_possible_max_value(self.t_ar, 
                                                       self.nan_value,
@@ -693,6 +700,11 @@ class GridBuilder():
                                                                                         falloff_weight=self.falloff_weight,
                                                                                         correct_by = self.gcd)
         
+        # for the first iteration, get all coordinates
+        array_it = np.nditer(self.t_ar, flags=['multi_index'])
+        self.current_coords_set = set([array_it.multi_index for i in array_it])
+    
+    
     def iterate_forward(self, how='full', by_amount=1):
         """ Progresses the raster by x steps 
             
@@ -716,9 +728,9 @@ class GridBuilder():
         init_step = self.step
         init_epoch = self.epoch
         
-        # for the first iteration, get all coordinates
-        array_it = np.nditer(self.t_ar, flags=['multi_index'])
-        current_coords_set = set([array_it.multi_index for i in array_it])
+        # init a set to be filled with new coords. New coords are collected each step through the grid
+        # and are populated by neighbouring NoData cells of those that were filled
+        new_coords_set = set()
         
         while True:
 
@@ -728,13 +740,10 @@ class GridBuilder():
             
             # set values in set_arr, then at the end overwrite t_ar with set_arr
             # dont write to array you are iterating over
-            set_arr = self.t_ar.copy()
-            
-            # init a set to be filled with new coords. New coords are collected each step through the grid
-            # and are populated by neighbouring NoData cells of those that were filled
-            new_coords_set = set()
+            set_arr = self.t_ar.copy()          
+
                         
-            for center_coords in current_coords_set:
+            for center_coords in self.current_coords_set:
                 
                 try:
                     # skip cells already assigned to value
@@ -744,8 +753,6 @@ class GridBuilder():
                         ):
                         continue
                 except IndexError:
-                    self.x = center_coords
-                    self.y = current_coords_set
                     continue
                                     
                 three_by_three_arr = get_3x3_array(self.t_ar, center_coords, self.nan_value)
@@ -762,7 +769,7 @@ class GridBuilder():
                     three_by_three_marr = three_by_three_marr + three_by_three_dist_marr
                 
                 # add the weight of the center value of the cost array
-                if self.cost_ar is not None:
+                if self.skip_cost_array is False:
                     if self.cost_method == "add":
                         three_by_three_marr = three_by_three_marr + self.cost_ar[center_coords]
                     elif self.cost_method == "mulitply":
@@ -811,32 +818,41 @@ class GridBuilder():
                     self.t_names_ar[center_coords] = self.t_names_ar[inherit_from_coord_glob]
                     
                     # get all neighbour values of set center cell as global coords and add to list of coords 
-                    # to check next round
-                    no_data_local_neighbours_list = get_value_locs_in_3x3(three_by_three_arr, 0)
+                    # to check next round. Global coordinates are returned as None if lying outside grid -> remove None values
+                    no_data_local_neighbours_list = get_value_locs_in_3x3(three_by_three_arr, self.nan_value)
                     no_data_global_neighbours_list = [local_coord_to_global(i, center_coords) for i in no_data_local_neighbours_list]
+                    no_data_global_neighbours_list = [i for i in no_data_global_neighbours_list if i is not None]
                     new_coords_set = new_coords_set | set(no_data_global_neighbours_list)
-                    
+                                        
                     # also check if just set center coordinate was in new_coords list for next step and delete
-                    new_coords_set.discard(center_coords)
+                    new_coords_set.discard(center_coords)                    
                     
                 else:
                     continue
-            
-            current_coords_set = new_coords_set.copy()
-            
+    
             self.t_ar = set_arr.copy()
             
             # increase step, reduce step to 1 when max possible value has been reached
-            self.step = self.step+1 if self.step <= self.total_max_value else 1
+            if self.step <= self.total_max_value:
+                self.step = self.step+1
+                stop_after_step = False
+            else:
+                self.step = 1
+                self.current_coords_set = new_coords_set.copy()
+                new_coords_set = set()
+                stop_after_step = True
+                
+            #self.step = self.step+1 if self.step <= self.total_max_value else 1
             self.iterations += 1
             if self.step == 1:
                 self.epoch += 1
             
             if how == 'full':
-                if np.array_equal(old_arr, self.t_ar) and self.step == self.total_max_value:
+                #if np.array_equal(old_arr, self.t_ar) and self.step > self.total_max_value:
+                if len(self.current_coords_set) == 0:
                     break
             elif how == 'step':
-                if (self.step - init_step) == by_amount:
+                if (self.step - init_step) == by_amount or stop_after_step is True:
                     break
             elif how == 'epoch':
                 if (self.epoch - init_epoch) == by_amount:
