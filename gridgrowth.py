@@ -728,10 +728,7 @@ class GridBuilder():
         
         init_step = self.step
         init_epoch = self.epoch
-        
-        # use this set to elimiate fully blank 3x3 grids so full grid only has to be run once
-        non_blank_coords_set = self.current_coords_set.copy()
-        
+                        
         # init a set to be filled with new coords. New coords are collected each step through the grid
         # and are populated by neighbouring NoData cells of those that were filled
         new_coords_set = set()
@@ -745,7 +742,10 @@ class GridBuilder():
             # set values in set_arr, then at the end overwrite t_ar with set_arr
             # dont write to array you are iterating over
             set_arr = self.t_ar.copy()          
-
+            
+            # use this set to elimiate fully blank 3x3 grids so full grid only has to be run once
+            # Also use this to remove cells once updated
+            non_blank_coords_set = self.current_coords_set.copy()
                         
             for center_coords in self.current_coords_set:
                 
@@ -831,14 +831,19 @@ class GridBuilder():
                     new_coords_set = new_coords_set | set(no_data_global_neighbours_list)
                                         
                     # also check if just set center coordinate was in new_coords list for next step and delete
-                    new_coords_set.discard(center_coords)                    
+                    new_coords_set.discard(center_coords)   
+                    
+                    # update non_blank_coords_set by removing the coordinate just set
+                    non_blank_coords_set.discard(center_coords)
                     
                 else:
                     continue
             
-            # only run EVERY cell in the very first step. During the rest of the first epoch dont run fully empty 3x3 grids again
-            if self.step == 1:
-                self.current_coords_set = non_blank_coords_set 
+            #if self.step == 1:
+            # remove used coordinates after every run and append new ones
+            self.current_coords_set = non_blank_coords_set.copy()
+            self.current_coords_set = self.current_coords_set | new_coords_set
+            new_coords_set = set()
     
             self.t_ar = set_arr.copy()
             
@@ -848,8 +853,6 @@ class GridBuilder():
                 stop_after_step = False
             else:
                 self.step = 1
-                self.current_coords_set = new_coords_set.copy()
-                new_coords_set = set()
                 stop_after_step = True
                 
             #self.step = self.step+1 if self.step <= self.total_max_value else 1
