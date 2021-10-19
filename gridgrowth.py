@@ -433,6 +433,7 @@ def local_coord_to_global(in_coord, center_coord):
     
     return (new_coord_0, new_coord_1)
 
+
 def falloff(func_type, dist, value, func_weight=None, correct_by=1):
     """ If called, will reduce an input :val: depending on its distance from original kernel
     
@@ -444,11 +445,11 @@ def falloff(func_type, dist, value, func_weight=None, correct_by=1):
         :value: original value
         :dist: int distance from original kernel
     
-    Reutrns:
+    Returns:
         int value after falloff. Minium value returned is 0
     
     Raises:
-        InputError if unknown func_type was called
+        ValueError if unknown func_type was called
     """
     
     if func_type == "linear":
@@ -470,7 +471,33 @@ def falloff(func_type, dist, value, func_weight=None, correct_by=1):
         raise ValueError(f"Falloff function must be linear, exp or log but was {func_type}")
     
     return max(0, int(ret_val) )
+
+
+def get_value_locs_in_3x3(in_3x3_ar, val, include_center = False):
+    """ Returns a list of tuple coordintaes in a 3x3 grid that have a specific value
     
+    Args:
+        :in_3x3_ar: Input 3x3 array
+        :val:       Value to check locations for
+        :include_center: if false, center coordinate is omitted even if it has :val:
+    
+    Returns:
+        list of tuples. Each tuple is a coordinate pair
+    
+    Raises:
+    """
+
+    out_coords_list = []
+    ar_3x3_it = np.nditer(in_3x3_ar, flags=['multi_index'])
+    for cell in ar_3x3_it:
+        if cell == val:
+            out_coords_list.append(ar_3x3_it.multi_index)
+    
+    if include_center is False and ((1,1) in out_coords_list):
+        out_coords_list.remove( (1,1) )
+    
+    return out_coords_list
+
 
 def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
                    falloff_type=None, falloff_weight=None, correct_by=1):
@@ -689,6 +716,10 @@ class GridBuilder():
         init_step = self.step
         init_epoch = self.epoch
         
+        # for the first iteration, get all coordinates
+        array_it = np.nditer(self.t_ar, flags=['multi_index'])
+        current_coords_set = set([array_it.multi_index for i in array_it])
+        
         while True:
 
             # make copy of input array. If this is still the same array at the end of the loop
@@ -699,15 +730,22 @@ class GridBuilder():
             # dont write to array you are iterating over
             set_arr = self.t_ar.copy()
             
-            array_it = np.nditer(self.t_ar, flags=['multi_index'])
-            for cell in array_it:
-                center_coords = array_it.multi_index
+            # init a set to be filled with new coords. New coords are collected each step through the grid
+            # and are populated by neighbouring NoData cells of those that were filled
+            new_coords_set = set()
+                        
+            for center_coords in current_coords_set:
                 
-                # skip cells already assigned to value
-                if ((self.t_ar[center_coords] != self.nan_value) and (self.t_names_ar[center_coords] )
-                    or
-                    (self.cost_ar[center_coords] == 0)
-                    ):
+                try:
+                    # skip cells already assigned to value
+                    if ((self.t_ar[center_coords] != self.nan_value) and (self.t_names_ar[center_coords] )
+                        or
+                        (self.cost_ar[center_coords] == 0)
+                        ):
+                        continue
+                except IndexError:
+                    self.x = center_coords
+                    self.y = current_coords_set
                     continue
                                     
                 three_by_three_arr = get_3x3_array(self.t_ar, center_coords, self.nan_value)
@@ -772,8 +810,19 @@ class GridBuilder():
                     self.org_t_ar[center_coords] = self.org_t_ar[inherit_from_coord_glob]
                     self.t_names_ar[center_coords] = self.t_names_ar[inherit_from_coord_glob]
                     
+                    # get all neighbour values of set center cell as global coords and add to list of coords 
+                    # to check next round
+                    no_data_local_neighbours_list = get_value_locs_in_3x3(three_by_three_arr, 0)
+                    no_data_global_neighbours_list = [local_coord_to_global(i, center_coords) for i in no_data_local_neighbours_list]
+                    new_coords_set = new_coords_set | set(no_data_global_neighbours_list)
+                    
+                    # also check if just set center coordinate was in new_coords list for next step and delete
+                    new_coords_set.discard(center_coords)
+                    
                 else:
                     continue
+            
+            current_coords_set = new_coords_set.copy()
             
             self.t_ar = set_arr.copy()
             
