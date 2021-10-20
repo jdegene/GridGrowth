@@ -417,12 +417,13 @@ def transition_rules_outcome(full_rules_dict=None,
         return
         
 
-def local_coord_to_global(in_coord, center_coord):
+def local_coord_to_global(in_coord, center_coord, max_x, max_y):
     """ Converts a coordinate from a 3x3 grid into coordinate from large grid 
     
     Args:
         :in_coord:      tuple of local coordinates to convert to global
         :center:coord:  center coordinate of 3x3 grid cell in global coordinate system
+        :max_x/y:       maxium x / y value the global coordinates can be
     
     Returns:
         Tuple of coordinates in global system
@@ -435,7 +436,7 @@ def local_coord_to_global(in_coord, center_coord):
     new_coord_1 = center_coord[1]  + in_coord[1]-1
     
     # only return valid coordinates, do nothing if coordinates would be negative
-    if new_coord_0 >= 0 and new_coord_1 >= 0:
+    if new_coord_0 >= 0 and new_coord_1 >= 0 and new_coord_0 <= max_x and new_coord_1 <= max_y:
         return (new_coord_0, new_coord_1)
 
 
@@ -540,6 +541,8 @@ def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
     plt.show()
     """
     
+    buffered_coords_set = set()
+    
     if by is None:
         return in_ar, org_ar, in_name_ar, in_dist_ar
     
@@ -583,7 +586,7 @@ def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
                                 in_name_ar[x,y] = name
                                 in_dist_ar[x,y] = dist
     
-    return out_ar, org_ar, in_name_ar, in_dist_ar
+    return out_ar, org_ar, in_name_ar, in_dist_ar, buffered_coords_set
                             
 
                                 
@@ -687,10 +690,13 @@ class GridBuilder():
                                                       self.weight_ar, 
                                                       cost_method = self.cost_method, 
                                                       weight_method = self.weight_method)
+        
+        # set to store finished coords in
+        self.done_coords_set = set()
     
         # set a buffer around kernels they get regardless of their strength
         if self.buffer_kernels_by:
-            self.t_ar, self.org_t_ar, self.t_names_ar, self.dist_ar = buffer_kernels(self.t_ar, 
+            self.t_ar, self.org_t_ar, self.t_names_ar, self.dist_ar, buf_kernels_set = buffer_kernels(self.t_ar, 
                                                                                         self.org_t_ar, 
                                                                                         self.nan_value, 
                                                                                         self.t_names_ar, 
@@ -700,9 +706,12 @@ class GridBuilder():
                                                                                         falloff_weight=self.falloff_weight,
                                                                                         correct_by = self.gcd)
         
+            self.done_coords_set = self.done_coords_set | buf_kernels_set
+        
         # for the first iteration, get all coordinates
         array_it = np.nditer(self.t_ar, flags=['multi_index'])
         self.current_coords_set = set([array_it.multi_index for i in array_it])
+        
 
     
     
@@ -732,7 +741,7 @@ class GridBuilder():
         # init a set to be filled with new coords. New coords are collected each step through the grid
         # and are populated by neighbouring NoData cells of those that were filled
         new_coords_set = set()
-        
+     
         while True:
 
             # make copy of input array. If this is still the same array at the end of the loop
@@ -741,23 +750,24 @@ class GridBuilder():
             
             # set values in set_arr, then at the end overwrite t_ar with set_arr
             # dont write to array you are iterating over
-            set_arr = self.t_ar.copy()          
+            set_arr = self.t_ar.copy()        
             
             # use this set to elimiate fully blank 3x3 grids so full grid only has to be run once
             # Also use this to remove cells once updated
             non_blank_coords_set = self.current_coords_set.copy()
-                        
-            for center_coords in self.current_coords_set:
-                
-                try:
-                    # skip cells already assigned to value
-                    if ((self.t_ar[center_coords] != self.nan_value) and (self.t_names_ar[center_coords] )
-                        or
-                        (self.cost_ar[center_coords] == 0)
-                        ):
-                        continue
-                except IndexError:
+     
+            for center_coords in self.current_coords_set:                
+
+                # skip cells already assigned to value
+                if ((center_coords in self.done_coords_set)
+                    or
+                    (self.t_ar[center_coords] != self.nan_value) and (self.t_names_ar[center_coords] )
+                    or
+                    (self.cost_ar[center_coords] == 0)
+                    ):
+                    non_blank_coords_set.discard(center_coords) 
                     continue
+
                                     
                 three_by_three_arr = get_3x3_array(self.t_ar, center_coords, self.nan_value)
                 
@@ -808,7 +818,7 @@ class GridBuilder():
                         continue
                     
                     # convert local 3x3 coordinate into global system
-                    inherit_from_coord_glob = local_coord_to_global( inherit_from_coord, center_coords)
+                    inherit_from_coord_glob = local_coord_to_global( inherit_from_coord, center_coords, self.shape[0]-1, self.shape[1]-1)
                     
                     # set values
                     if self.falloff_type is None:
@@ -823,10 +833,12 @@ class GridBuilder():
                     self.org_t_ar[center_coords] = self.org_t_ar[inherit_from_coord_glob]
                     self.t_names_ar[center_coords] = self.t_names_ar[inherit_from_coord_glob]
                     
+                    self.done_coords_set.add(center_coords)
+                    
                     # get all neighbour values of set center cell as global coords and add to list of coords 
                     # to check next round. Global coordinates are returned as None if lying outside grid -> remove None values
                     no_data_local_neighbours_list = get_value_locs_in_3x3(three_by_three_arr, self.nan_value)
-                    no_data_global_neighbours_list = [local_coord_to_global(i, center_coords) for i in no_data_local_neighbours_list]
+                    no_data_global_neighbours_list = [local_coord_to_global(i, center_coords, self.shape[0]-1, self.shape[1]-1) for i in no_data_local_neighbours_list]
                     no_data_global_neighbours_list = [i for i in no_data_global_neighbours_list if i is not None]
                     new_coords_set = new_coords_set | set(no_data_global_neighbours_list)
                                         
@@ -839,7 +851,6 @@ class GridBuilder():
                 else:
                     continue
             
-            #if self.step == 1:
             # remove used coordinates after every run and append new ones
             self.current_coords_set = non_blank_coords_set.copy()
             self.current_coords_set = self.current_coords_set | new_coords_set
@@ -873,8 +884,11 @@ class GridBuilder():
             else:
                 raise ValueError(f"'how' must be full, step or epoch but {how} was given")
             
-            if self.step % 10 == 0:
-                print(f"\rStep: {self.step}, Iteration: {self.iterations}, Epoch: {self.epoch}", end='')
+            if self.step % min(self.total_max_value, 10) == 0:
+                print((f"\rStep: {self.step}, Iteration: {self.iterations}, Epoch: {self.epoch}, "
+                       f"Done Coords: {len(self.done_coords_set)} = {len(self.done_coords_set)/self.t_ar.size:.2f}, "
+                       f" Current Coords: {len(self.current_coords_set)}")
+                      , end='')
                 
 
 class GeoGridBuilder(GridBuilder):
