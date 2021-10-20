@@ -317,7 +317,7 @@ def get_3x3_array(in_array, in_coords, nan_value):
     # else get what is available from large array then pad according to location
     else:
         out_arr = in_array[max(0, in_coords[0]-1) : min(in_array.shape[0], in_coords[0]+2), 
-                           max(0, in_coords[1]-1) : min(in_array.shape[0], in_coords[1]+2)]
+                           max(0, in_coords[1]-1) : min(in_array.shape[1], in_coords[1]+2)]
         
         # top row but not corners
         if in_coords[0] == 0 and in_coords[1] not in (0, in_array.shape[1]-1):
