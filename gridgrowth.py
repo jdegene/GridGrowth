@@ -476,7 +476,7 @@ def falloff(func_type, dist, value, func_weight=None, correct_by=1):
     else:
         raise ValueError(f"Falloff function must be linear, exp or log but was {func_type}")
     
-    return max(0, int(ret_val) )
+    return max(0, round(ret_val) )
 
 
 def get_value_locs_in_3x3(in_3x3_ar, val, include_center = False):
