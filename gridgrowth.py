@@ -351,7 +351,9 @@ def transition_rules_outcome(full_rules_dict=None,
                              strength_3x3_ar=None,
                              terrain_ar=None, 
                              pos_coords_list=[], 
-                             glob_center_coord=None):
+                             glob_center_coord=None,
+                             max_distance=None,
+                             dist_inherit_ar=None):
     """ 
     Checks if transition in full_rules_dict is 0 (not allowed), 1 (allowed) or 2 (give precedence)
     0 transitions are never returned
@@ -366,6 +368,8 @@ def transition_rules_outcome(full_rules_dict=None,
         :pos_coords_list:       list of coords from 3x3 grid to check
         :glob_center_coord:     global center coord to be set by values from pos_coords_list
         :terrain_ar:            full terrain array
+        :max_distance:          default 0, can be used to exclude cells if a max distance was given
+        :dist_inherit_ar:       default None, only used if a max_distance was given
     
     Returns:
         Tuple of 3x3 coordinates to set center value with
@@ -376,12 +380,23 @@ def transition_rules_outcome(full_rules_dict=None,
     strength_3x3_ar = np.array( [[ 2,0,0 ],[0,0,0],[0,7,0]] )
     """
     
-    if full_rules_dict is None or terrain_ar is None:
+    # return first value if no other rules apply because even if any others exist, just take the first one
+    if (full_rules_dict is None or terrain_ar is None) and max_distance is None:
         return pos_coords_list[0]
     
-    # get small terrain
-    #terrain_3x3_ar = terrain_ar[glob_center_coord[0]-1:glob_center_coord[0]+2, 
-    #                            glob_center_coord[1]-1:glob_center_coord[1]+2]
+    # remove coordinates from pos_coords_list if they violate the max_dist rule
+    if max_distance is not None:
+        for coords in pos_coords_list.copy(): 
+            three_by_three_coords_arr = get_3x3_array(dist_inherit_ar, glob_center_coord, dist_inherit_ar[glob_center_coord])
+            if calculate_distance(glob_center_coord, three_by_three_coords_arr[coords]) > max_distance:
+                pos_coords_list.remove(coords)
+        
+        if len(pos_coords_list) == 0:
+            return
+    
+    # still return with updated pos_
+    if full_rules_dict is None or terrain_ar is None:
+        return pos_coords_list[0]
     
     terrain_3x3_ar = get_3x3_array(terrain_ar, glob_center_coord, 9999)
     
@@ -395,6 +410,7 @@ def transition_rules_outcome(full_rules_dict=None,
     allowed_weights_list = []
     
     for coords in pos_coords_list:
+        
         from_terrain_code = terrain_3x3_ar[coords[0],coords[1]]
         if full_rules_dict[from_terrain_code][center_terrain_code] == 2:
             precedence_list.append(coords)
@@ -588,9 +604,11 @@ def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
     
     return out_ar, org_ar, in_name_ar, in_dist_ar, buffered_coords_set
                             
-
-                                
-
+def calculate_distance(coords1, coords2):
+    """ Calulates distance in cells between two coordinate pairs """
+    
+    dist = math.sqrt(abs(coords1[0] - coords2[0])**2 + abs(coords1[1] - coords2[1])**2)
+    return dist
 
 class GridBuilder():
     """ Main class to handle initiation of the grid and stepping through the epochs """    
@@ -645,7 +663,10 @@ class GridBuilder():
         self.weight_ar = weight_ar
 
         # distance array that will keep track how far a pixel is away from original seed
-        self.dist_ar = np.zeros(self.shape, dtype="int")
+        self.dist_ar = np.zeros(self.shape, dtype="float")
+        
+        # have an array that tracks for each cell, from which coordinate coordinate it inherited its value from
+        self.dist_inherit_ar = np.empty(self.shape, dtype=object)
         
         # if nan_value was not given, use value which occurs most in cost_array
         if nan_value is None:
@@ -708,12 +729,15 @@ class GridBuilder():
         
             self.done_coords_set = self.done_coords_set | buf_kernels_set
         
-        # for the first iteration, get all coordinates
+        # for the first iteration, get all coordinates and init current_coords_set
+        # Also init dist_inherit_ar by giving each cell its own coordinate as a value
+        self.current_coords_set = set()
         array_it = np.nditer(self.t_ar, flags=['multi_index'])
-        self.current_coords_set = set([array_it.multi_index for i in array_it])
-        
-
-    
+        for init_cell in array_it:
+            init_coord = array_it.multi_index
+            self.dist_inherit_ar[init_coord] = init_coord
+            self.current_coords_set.add(init_coord)
+            
     
     def iterate_forward(self, how='full', by_amount=1):
         """ Progresses the raster by x steps 
@@ -777,13 +801,7 @@ class GridBuilder():
                     continue
                 
                 three_by_three_marr = np.ma.masked_equal(three_by_three_arr, self.nan_value)
-                
-                # if a maximum distance was given, create a masked array that masks all distance violations in 3x3 own
-                if self.max_dist is not None:
-                    three_by_three_dist_arr = get_3x3_array(self.dist_ar, center_coords, self.max_dist)
-                    three_by_three_dist_marr = np.ma.masked_greater(three_by_three_dist_arr, self.max_dist)
-                    three_by_three_marr = three_by_three_marr + three_by_three_dist_marr
-                
+                                
                 # add the weight of the center value of the cost array
                 if self.skip_cost_array is False:
                     if self.cost_method == "add":
@@ -806,20 +824,22 @@ class GridBuilder():
                 # get a list of all cells that could set the center value
                 pos_coords_list = determine_center_values(inv_three_by_three_ar, self.step, self.nan_value)
                 if pos_coords_list is not None:
-                    
+
                     # check which of possbile many eligible cells is allowed by terrain rules to move to center coord
                     inherit_from_coord = transition_rules_outcome(full_rules_dict=self.full_transition_rules_dict, 
                                              strength_3x3_ar=inv_three_by_three_ar,
                                              terrain_ar=self.terrain_ar, 
                                              pos_coords_list=pos_coords_list, 
-                                             glob_center_coord=center_coords)
+                                             glob_center_coord=center_coords,
+                                             max_distance=self.max_dist,
+                                             dist_inherit_ar = self.dist_inherit_ar)
                     
                     if inherit_from_coord is None:
                         continue
                     
                     # convert local 3x3 coordinate into global system
                     inherit_from_coord_glob = local_coord_to_global( inherit_from_coord, center_coords, self.shape[0]-1, self.shape[1]-1)
-                    
+                                        
                     # set values
                     if self.falloff_type is None:
                         set_arr[center_coords] = self.t_ar[inherit_from_coord_glob]
@@ -829,7 +849,9 @@ class GridBuilder():
                                                           self.t_ar[inherit_from_coord_glob],
                                                           func_weight=self.falloff_weight)
                     
-                    self.dist_ar[center_coords] = self.dist_ar[inherit_from_coord_glob]+1
+                    self.dist_inherit_ar[center_coords] = self.dist_inherit_ar[inherit_from_coord_glob]
+                    self.dist_ar[center_coords] = calculate_distance(center_coords, self.dist_inherit_ar[center_coords])
+                    
                     self.org_t_ar[center_coords] = self.org_t_ar[inherit_from_coord_glob]
                     self.t_names_ar[center_coords] = self.t_names_ar[inherit_from_coord_glob]
                     
@@ -872,8 +894,9 @@ class GridBuilder():
                 self.epoch += 1
             
             if how == 'full':
-                #if np.array_equal(old_arr, self.t_ar) and self.step > self.total_max_value:
                 if len(self.current_coords_set) == 0:
+                    break
+                if np.array_equal(old_arr, self.t_ar) and self.step == self.total_max_value:
                     break
             elif how == 'step':
                 if (self.step - init_step) == by_amount or stop_after_step is True:
