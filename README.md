@@ -120,10 +120,10 @@ The following examples can be run self-contained by running examples.py
 
 1) Load kernel strength array only and run in full without any additional. Name and strength array are the same\
 
-```
-grid = GridBuilder(tarr)\
-grid.iterate_forward("full")
-```
+	```
+	grid = GridBuilder(tarr)\
+	grid.iterate_forward("full")
+	```
 
 	| ![Full strength array](examples/ex1_output_strength_array.png) | ![Full name array](examples/ex1_output_name_array.png) | [Full distance array(examples/ex1_output_distance_array.png) |
 	|:--:|:--:|:--:|
