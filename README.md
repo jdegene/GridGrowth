@@ -140,7 +140,7 @@ The following examples can be run self-contained by running examples.py
 	|:--:|:--:|:--:|
 	| *Fully grown strength array* | *Name array different from strength array* | *Distance array with distance from kernels* |
 
-3) Load kernel strength array and different names array. Run only (arbitrary) 17 epoch
+3) Load kernel strength array and different names array. Run only (arbitrary) 17 epochs
 
 	```
 	grid = GridBuilder(tarr, t_names_ar=name_arr)
@@ -150,3 +150,14 @@ The following examples can be run self-contained by running examples.py
 	| ![Full strength array](examples/ex3_output_strength_array.png) | ![Full name array](examples/ex3_output_name_array.png) | ![Full distance array](examples/ex3_output_distance_array.png) |
 	|:--:|:--:|:--:|
 	| *Strength array grown 17 epochs* | *Name array after 17 epochs* | *Distance array with distance from kernels* |
+
+4) Load kernel strength array and different names array. Run full. Buffer each kernel by 17 pixels regardless of their strength.
+
+	```
+	grid = GridBuilder(tarr, t_names_ar=name_arr, buffer_kernels_by=25)
+	grid.iterate_forward("full")
+	```
+
+	| ![Full strength array](examples/ex4_output_strength_array.png) | ![Full name array](examples/ex4_output_name_array.png) | ![Full distance array](examples/ex4_output_distance_array.png) |
+	|:--:|:--:|:--:|
+	| *Strength array with 17 cells kernel buffer* | *Corresponding name array* | *Distance array with distance from kernels* |
