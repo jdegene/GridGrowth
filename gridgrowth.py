@@ -652,7 +652,7 @@ class GridBuilder():
         self.terrain_ar = terrain_ar
         
         
-        self.terrain_rules_dict = terrain_rules_dict.copy()
+        self.terrain_rules_dict = terrain_rules_dict
         if self.terrain_rules_dict is not None:
             self.full_transition_rules_dict = build_transition_rules_full(trans_rules_dict=self.terrain_rules_dict, 
                                                              terrain_ar=self.terrain_ar)
