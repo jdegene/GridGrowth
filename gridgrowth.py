@@ -619,7 +619,7 @@ class GridBuilder():
                  optimize_input=False):
         
         # traverse array that gives the initial seeds. Should be of type non-negative int
-        self.t_ar = t_ar        
+        self.t_ar = t_ar.copy()   
         self.shape = t_ar.shape
         
         # keep an array in parallel that retains the original t_ar value for all cells
@@ -633,13 +633,13 @@ class GridBuilder():
         if t_names_ar is None:
             self.t_names_ar = t_ar.copy()
         else:
-            self.t_names_ar = t_names_ar
+            self.t_names_ar = t_names_ar.copy()
         
         # a cost array is a numerical value of "how fast" a cell can be traversed.
         # Higher values means faster. Can be None = no terrain influence
         # Must have same shape as t_ar
         if cost_ar is not None:
-            self.cost_ar = cost_ar
+            self.cost_ar = cost_ar.copy()
             self.skip_cost_array = False
         else:
             self.cost_ar = np.ones(self.shape, dtype='int')
@@ -649,9 +649,9 @@ class GridBuilder():
         # a terrain array can be used to disallow transitions between certain cell types
         # Transition rules come in terrain_rules_dict. Can be None = all transitions allowed
         # Must have same shape as t_ar
-        self.terrain_ar = terrain_ar
+        self.terrain_ar = terrain_ar.copy()
         
-        self.terrain_rules_dict = terrain_rules_dict
+        self.terrain_rules_dict = terrain_rules_dict.copy()
         if self.terrain_rules_dict is not None:
             self.full_transition_rules_dict = build_transition_rules_full(trans_rules_dict=self.terrain_rules_dict, 
                                                              terrain_ar=self.terrain_ar)
