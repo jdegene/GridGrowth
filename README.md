@@ -125,8 +125,17 @@ The following examples can be run self-contained by running examples.py
 	grid.iterate_forward("full")
 	```
 
-	| ![Full strength array](examples/ex1_output_strength_array.png) | ![Full name array](examples/ex1_output_name_array.png) | [Full distance array](examples/ex1_output_distance_array.png) |
+	| ![Full strength array](examples/ex1_output_strength_array.png) | ![Full name array](examples/ex1_output_name_array.png) | ![Full distance array](examples/ex1_output_distance_array.png) |
 	|:--:|:--:|:--:|
 	| *Fully grown strength array* | *Name array same as strength array* | *Distance array with distance from kernels* |
 
+2) Load kernel strength array but use different names/ids for kernels
 
+	```
+	grid = GridBuilder(tarr, t_names_ar=name_arr)
+	grid.iterate_forward("full")
+	```
+
+	| ![Full strength array](examples/ex2_output_strength_array.png) | ![Full name array](examples/ex2_output_name_array.png) | ![Full distance array](examples/ex2_output_distance_array.png) |
+	|:--:|:--:|:--:|
+	| *Fully grown strength array* | *Name array different from strength array* | *Distance array with distance from kernels* |
