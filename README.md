@@ -172,3 +172,15 @@ The following examples can be run self-contained by running examples.py
 	| ![Full strength array](examples/ex5_output_strength_array.png) | ![Full name array](examples/ex5_output_name_array.png) | ![Full distance array](examples/ex5_output_distance_array.png) |
 	|:--:|:--:|:--:|
 	| *Strength array with 25 cells kernel buffer and max growth of 55* | *Corresponding name array* | *Distance array with distance from kernels* |
+
+6) Load kernel strength array and different names array. Run full.  Add a 3x3 weight grid that emphasizes/push from "north" direction. Before a cell value is set, the "north" values of this cell are added the value 10 and are thus always much stronger than the other values. Imagine it as wind blowing from that direction.
+
+	```
+	push_grid = np.array([10,10,10,0,0,0,0,0,0]).reshape(3,3)
+	grid = GridBuilder(tarr, t_names_ar=name_arr, weight_ar=push_grid, weight_method = "add")
+	grid.iterate_forward("full")
+	```
+
+	| ![Full strength array](examples/ex6_output_strength_array.png) | ![Full name array](examples/ex6_output_name_array.png) | ![Full distance array](examples/ex6output_distance_array.png) |
+	|:--:|:--:|:--:|
+	| *Strength array value 10 added from all "northern" cells* | *Corresponding name array* | *Distance array with distance from kernels* |

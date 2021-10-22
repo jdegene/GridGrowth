@@ -65,3 +65,33 @@ grid.iterate_forward("full")
 plt.imsave("./examples/ex4_output_strength_array.png", grid.t_ar)
 plt.imsave("./examples/ex4_output_distance_array.png", grid.dist_ar)
 plt.imsave("./examples/ex4_output_name_array.png", grid.t_names_ar)
+
+
+# ex5) similar to 4 - load kernel strength array and different name array. Run full. 
+# Every kernel get radius of 25 cells no matter their strength. Max growth is 55 cells.
+grid = GridBuilder(tarr, t_names_ar=name_arr, buffer_kernels_by=25, max_dist=55)
+grid.iterate_forward("full")
+
+plt.imsave("./examples/ex5_output_strength_array.png", grid.t_ar)
+plt.imsave("./examples/ex5_output_distance_array.png", grid.dist_ar)
+plt.imsave("./examples/ex5_output_name_array.png", grid.t_names_ar)
+
+
+# ex6) similar to 2 - load kernel strength array and different name array. Run full. 
+# Add a 3x3 weight grid that emphasizes/push from "north" direction.
+push_grid = np.array([10,10,10,0,0,0,0,0,0]).reshape(3,3)
+grid = GridBuilder(tarr, t_names_ar=name_arr, weight_ar=push_grid, weight_method = "add")
+grid.iterate_forward("full")
+
+plt.imsave("./examples/ex6_output_strength_array.png", grid.t_ar)
+plt.imsave("./examples/ex6_output_distance_array.png", grid.dist_ar)
+plt.imsave("./examples/ex6_output_name_array.png", grid.t_names_ar)
+
+# ex7) similar to 2 - load kernel strength array and different name array. Run full. 
+# Reduce initial kernel strength by distance using a linear correction.
+grid = GridBuilder(tarr, t_names_ar=name_arr, falloff_type=None, falloff_weight=None)
+grid.iterate_forward("full")
+
+plt.imsave("./examples/ex5_output_strength_array.png", grid.t_ar)
+plt.imsave("./examples/ex5_output_distance_array.png", grid.dist_ar)
+plt.imsave("./examples/ex5_output_name_array.png", grid.t_names_ar)
