@@ -306,8 +306,8 @@ def get_3x3_array(in_array, in_coords, nan_value):
     """
     
     # if not an edge case, simply slice and return
-    if ( (in_coords[0] > 0 and in_coords[0] < in_array.shape[0]) and 
-         (in_coords[1] > 0 and in_coords[1] < in_array.shape[1])   ):
+    if ( (in_coords[0] > 0 and in_coords[0] < in_array.shape[0]-1) and 
+         (in_coords[1] > 0 and in_coords[1] < in_array.shape[1]-1)   ):
         
         out_arr = in_array[in_coords[0]-1:in_coords[0]+2, 
                            in_coords[1]-1:in_coords[1]+2]
@@ -796,7 +796,6 @@ class GridBuilder():
                     ):
                     non_blank_coords_set.discard(center_coords) 
                     continue
-
                                     
                 three_by_three_arr = get_3x3_array(self.t_ar, center_coords, self.nan_value)
                 
