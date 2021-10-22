@@ -26,7 +26,7 @@ Et voila, myArray should not contain any NoData values anymore. Btw, the "t" in 
 
 ## How it Works
 
-Yeah sorry, it is still slow and I have to think about optimization. But to implement all these nice features like terrain dependency, I need to iterate over each cell/pixel several times to determine if its value is known yet.
+Yeah sorry, it is still slow and I have to think about optimization. But to implement all these nice features like terrain dependency, I need to iterate over each cell/pixel at least twice to determine if its value is known yet.
 
 Let's say there are two kernels: one has strengh 3, one has strenth 1. Now if a cell has NoData but its neighbouring cell has strength 3, it will also have strength 3 in the next run and be assimilated into the kernel that initiaed the strengh 3. Neighouring cells to the kernel with strength 1 are however only updated every 3rd iteration, because they are only 1/3 as strong. 
 
@@ -129,7 +129,7 @@ The following examples can be run self-contained by running examples.py
 	|:--:|:--:|:--:|
 	| *Fully grown strength array* | *Name array same as strength array* | *Distance array with distance from kernels* |
 
-2) Load kernel strength array but use different names/ids for kernels
+2) Load kernel strength array, run full but use different names/ids for kernels
 
 	```
 	grid = GridBuilder(tarr, t_names_ar=name_arr)
@@ -139,3 +139,14 @@ The following examples can be run self-contained by running examples.py
 	| ![Full strength array](examples/ex2_output_strength_array.png) | ![Full name array](examples/ex2_output_name_array.png) | ![Full distance array](examples/ex2_output_distance_array.png) |
 	|:--:|:--:|:--:|
 	| *Fully grown strength array* | *Name array different from strength array* | *Distance array with distance from kernels* |
+
+3) Load kernel strength array and different names array. Run only (arbitrary) 17 epoch
+
+	```
+	grid = GridBuilder(tarr, t_names_ar=name_arr)
+	grid.iterate_forward("epoch", by_amount=17)
+	```
+
+	| ![Full strength array](examples/ex3_output_strength_array.png) | ![Full name array](examples/ex3_output_name_array.png) | ![Full distance array](examples/ex3_output_distance_array.png) |
+	|:--:|:--:|:--:|
+	| *Strength array grown 17 epochs* | *Name array after 17 epochs* | *Distance array with distance from kernels* |
