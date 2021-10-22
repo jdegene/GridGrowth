@@ -111,7 +111,9 @@ The following examples can be run self-contained by running examples.py
 
 ### SetUp
 
-![Inital strength array with 3 kernels](examples/init_strength_array.png)
+| ![Inital strength array with 3 kernels](examples/init_strength_array.png) |
+|:--:| 
+| *Barely visible init kernels at (0,9),(57,99),(99,99)* |
 
 ### Example 1: Easiest Case
 Load kernel strength array only and run in full without any additional 
