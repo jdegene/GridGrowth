@@ -117,10 +117,13 @@ The following examples can be run self-contained by running examples.py
 | (0,9)=2, (57,95)=3, (99,99)=2 | (0,9)=2, (57,95)=3, (99,99)=2 |
 
 ### Simple Cases
+
 1) Load kernel strength array only and run in full without any additional. Name and strength array are the same\
+```
 grid = GridBuilder(tarr)\
-grid.iterate_forward("full")\
-	| ![Full strength array](examples/ex1_output_strength_array.png) | ![Full name array](examples/ex1_output_name_array.png) | [Full distance array](examples/ex1_output_distance_array.png) |
+grid.iterate_forward("full")
+```
+	| ![Full strength array](examples/ex1_output_strength_array.png) | ![Full name array](examples/ex1_output_name_array.png) | [Full distance array(examples/ex1_output_distance_array.png) |
 	|:--:|:--:|:--:|
 	| *Fully grown strength array* | *Name array same as strength array* | *Distance array with distance from kernels* |
 
