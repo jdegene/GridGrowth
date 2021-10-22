@@ -60,9 +60,9 @@ The GridBuilder class has the following optional keywords you can use (you can s
 	Example Dictionary:
 	```
 	terrain_rules_dict = {'only_allowed': {2:3, 1:0},
-						 'limit_into': [0],
-						 'never_allowed': {3: [2,1]},
-						 'takes_precedence': {0:1}}
+					'limit_into': [0],
+					'never_allowed': {3: [2,1]},
+					'takes_precedence': {0:1}}
 	```
 
 * **weight_ar** can be seen as a general directional effect. Must be a 3x3 array. Imagine as kind of a push factor, if all values in the 3x3 grid are 1 but the top left value is 5, then in all cases values coming from top left are over valued by a factor of 5. This can for example be used for modelling general "wind" effects.
@@ -103,4 +103,16 @@ myArray.save_to_geotiff("C:/OutputFolder/")
 ```
 
 As you can see, it will also handle saving the array it uses internally to a georeferenced GeoTiff. Btw the support for GeoTiffs is hardcoded for now, to use other GDAL supported raster formats is surely not a problem but for now not supported.
+
+
+## Usage & Examples
+
+The following examples can be run self-contained by running examples.py
+
+### SetUp
+
+![Inital strength array with 3 kernels](examples/init_strength_array.png)
+
+### Example 1: Easiest Case
+Load kernel strength array only and run in full without any additional 
 
