@@ -109,12 +109,19 @@ As you can see, it will also handle saving the array it uses internally to a geo
 
 The following examples can be run self-contained by running examples.py
 
-### SetUp
+### SetUp of initial 100x100 arrays
 
-| ![Inital strength array with 3 kernels](examples/init_strength_array.png) |
-|:--:| 
-| *Barely visible init kernels at (0,9),(57,99),(99,99)* |
+| ![Init strength array](examples/init_strength_array.png) | ![Init name array](examples/init_strength_array.png) |
+|:--:|:--:|
+| *Barely visible init strength kernels with* | *Corresponding name arrays where kernels IDs are:* |
+| (0,9)=2, (57,95)=3, (99,99)=2 | (0,9)=2, (57,95)=3, (99,99)=2 |
 
-### Example 1: Easiest Case
-Load kernel strength array only and run in full without any additional 
+### Simple Cases
+* 1) Load kernel strength array only and run in full without any additional. Name and strength array are the same
+	grid = GridBuilder(tarr)
+	grid.iterate_forward("full")
+	| ![Full strength array](examples/ex1_output_strength_array.png) | ![Full name array](examples/ex1_output_name_array.png) | [Full distance array](examples/ex1_output_distance_array.png) |
+	|:--:|:--:|:--:|
+	| *Fully grown strength array* | *Name array same as strength array* | *Distance array with distance from kernels* |
+
 
