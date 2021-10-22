@@ -173,7 +173,7 @@ The following examples can be run self-contained by running examples.py
 	|:--:|:--:|:--:|
 	| *Strength array with 25 cells kernel buffer and max growth of 55* | *Corresponding name array* | *Distance array with distance from kernels* |
 
-6) Load kernel strength array and different names array. Run full.  Add a 3x3 weight grid that emphasizes/push from "north" direction. Before a cell value is set, the "north" values of this cell are added the value 10 and are thus always much stronger than the other values. Imagine it as wind blowing from that direction.
+6) Load kernel strength array and different names array. Run full. Add a 3x3 weight grid that emphasizes/pushes from "north" direction. Before a cell value is set, the "north" values of this cell are added the value 10 and are thus always much stronger than the other values. Imagine it as wind blowing from that direction.
 
 	```
 	push_grid = np.array([10,10,10,0,0,0,0,0,0]).reshape(3,3)
@@ -181,6 +181,19 @@ The following examples can be run self-contained by running examples.py
 	grid.iterate_forward("full")
 	```
 
-	| ![Full strength array](examples/ex6_output_strength_array.png) | ![Full name array](examples/ex6_output_name_array.png) | ![Full distance array](examples/ex6output_distance_array.png) |
+	| ![Full strength array](examples/ex6_output_strength_array.png) | ![Full name array](examples/ex6_output_name_array.png) | ![Full distance array](examples/ex6_output_distance_array.png) |
 	|:--:|:--:|:--:|
-	| *Strength array value 10 added from all "northern" cells* | *Corresponding name array* | *Distance array with distance from kernels* |
+	| *Strength array value 10 added from all "northern" cells while propagating* | *Corresponding name array* | *Distance array with distance from kernels* |
+
+### Bit more elaborate Cases
+
+7) Load kernel strength array and different names array. Run full. Reduce initial kernel strength by distance using a linear correction. Set falloff weight to 0.01 corresponds to: *return_val = original_strength - cell_distance * 0.01*
+
+	```
+	grid = GridBuilder(tarr, t_names_ar=name_arr, falloff_type="linear", falloff_weight=0.01)
+	grid.iterate_forward("full")
+	```
+
+	| ![Full strength array](examples/ex7_output_strength_array.png) | ![Full name array](examples/ex7_output_name_array.png) | ![Full distance array](examples/ex7_output_distance_array.png) |
+	|:--:|:--:|:--:|
+	| *Strength array with linear distance strength reduction* | *Corresponding name array* | *Distance array with distance from kernels* |

@@ -89,9 +89,9 @@ plt.imsave("./examples/ex6_output_name_array.png", grid.t_names_ar)
 
 # ex7) similar to 2 - load kernel strength array and different name array. Run full. 
 # Reduce initial kernel strength by distance using a linear correction.
-grid = GridBuilder(tarr, t_names_ar=name_arr, falloff_type=None, falloff_weight=None)
+grid = GridBuilder(tarr, t_names_ar=name_arr, falloff_type="linear", falloff_weight=0.01)
 grid.iterate_forward("full")
 
-plt.imsave("./examples/ex5_output_strength_array.png", grid.t_ar)
-plt.imsave("./examples/ex5_output_distance_array.png", grid.dist_ar)
-plt.imsave("./examples/ex5_output_name_array.png", grid.t_names_ar)
+plt.imsave("./examples/ex7_output_strength_array.png", grid.t_ar)
+plt.imsave("./examples/ex7_output_distance_array.png", grid.dist_ar)
+plt.imsave("./examples/ex7_output_name_array.png", grid.t_names_ar)
