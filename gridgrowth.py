@@ -649,7 +649,8 @@ class GridBuilder():
         # a terrain array can be used to disallow transitions between certain cell types
         # Transition rules come in terrain_rules_dict. Can be None = all transitions allowed
         # Must have same shape as t_ar
-        self.terrain_ar = terrain_ar.copy()
+        self.terrain_ar = terrain_ar
+        
         
         self.terrain_rules_dict = terrain_rules_dict.copy()
         if self.terrain_rules_dict is not None:
