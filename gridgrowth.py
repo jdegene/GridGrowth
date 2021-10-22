@@ -522,7 +522,7 @@ def get_value_locs_in_3x3(in_3x3_ar, val, include_center = False):
 
 
 def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
-                   falloff_type=None, falloff_weight=None, correct_by=1):
+                   falloff_type=None, falloff_weight=None, in_inherit_ar=None, correct_by=1):
     """ Add a buffer around initial kernels to force immediate vicinty to belong to kernels
     
     Args:
@@ -601,6 +601,8 @@ def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
                                 org_ar[x,y] = kernel_strength
                                 in_name_ar[x,y] = name
                                 in_dist_ar[x,y] = dist
+                                buffered_coords_set.add( (x,y) )
+                                in_inherit_ar[x,y] = coords
     
     return out_ar, org_ar, in_name_ar, in_dist_ar, buffered_coords_set
                             
@@ -666,7 +668,7 @@ class GridBuilder():
         # distance array that will keep track how far a pixel is away from original seed
         self.dist_ar = np.zeros(self.shape, dtype="float")
         
-        # have an array that tracks for each cell, from which coordinate coordinate it inherited its value from
+        # have an array that tracks for each cell, from which coordinate it inherited its value from
         self.dist_inherit_ar = np.empty(self.shape, dtype=object)
         
         # if nan_value was not given, use value which occurs most in cost_array
@@ -726,6 +728,7 @@ class GridBuilder():
                                                                                         by=self.buffer_kernels_by,
                                                                                         falloff_type=self.falloff_type,
                                                                                         falloff_weight=self.falloff_weight,
+                                                                                        in_inherit_ar=self.dist_inherit_ar,
                                                                                         correct_by = self.gcd)
         
             self.done_coords_set = self.done_coords_set | buf_kernels_set
@@ -736,9 +739,10 @@ class GridBuilder():
         array_it = np.nditer(self.t_ar, flags=['multi_index'])
         for init_cell in array_it:
             init_coord = array_it.multi_index
-            self.dist_inherit_ar[init_coord] = init_coord
             self.current_coords_set.add(init_coord)
-            
+            if self.dist_inherit_ar[init_coord] is None:
+                self.dist_inherit_ar[init_coord] = init_coord     
+    
     
     def iterate_forward(self, how='full', by_amount=1):
         """ Progresses the raster by x steps 
