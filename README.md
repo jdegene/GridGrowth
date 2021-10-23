@@ -114,10 +114,11 @@ The following examples can be run self-contained by running examples.py
 
 | ![Init strength array](examples/init_strength_array.png) | ![Init name array](examples/init_strength_array.png) |
 |:--:|:--:|
-| *[tarr] Barely visible init strength kernels with* | *[name_arr] Corresponding name arrays where kernels IDs are:* |
-| (0,9)=2, (57,95)=3, (99,99)=2 | (0,9)=10, (57,95)=25, (99,99)=50 |
-|:--:|:--:|
+| *[tarr] Barely visible init strength kernels with (0,9)=2, (57,95)=3, (99,99)=2* | *[name_arr] Corresponding name arrays where kernels IDs are: (0,9)=10, (57,95)=25, (99,99)=50* |
+
+
 | ![Init cost array](examples/init_cost_array.png) | ![Init terrain array](examples/init_terrain_array.png) |
+|:--:|:--:|
 | *[cost_arr] Cost array where larger values speed up expansion. The lower line has a value of 20, the upper rectangle of 10 * | *[terrain_arr] that encodes the terrain with IDs and works together with a terrain dictionary to set transition rules* |
 
 ### Simple Cases
