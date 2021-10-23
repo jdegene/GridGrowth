@@ -76,8 +76,7 @@ def create_flip_dict(vals_list):
     
 def determine_center_values(in_3x3_ar, step, nan_value):
     """ Determines which values in the 3x3 grid will set the center value.
-        Only values that are not :nan_value: and have no remainder when 
-            divided by :step: are eligible. 
+        Only values that are not :nan_value: and are >= :step: are eligible. 
         Center value is explicitely left included to to allow cases when a value
             can be altered again after being set.
         If two or more possible output values exist, choose random.
@@ -106,8 +105,12 @@ def determine_center_values(in_3x3_ar, step, nan_value):
     
     null_ar = np.where( (in_3x3_ar == nan_value), np.nan, in_3x3_ar)
     
-    # set values to nan if remainder exist when dividing by step
-    null_ar = np.where(np.mod(step, null_ar, where=~np.isnan(null_ar)) == 0, 
+    # OLD set values to nan if remainder exist when dividing by step
+    #null_ar = np.where(np.mod(step, null_ar, where=~np.isnan(null_ar)) == 0, 
+    #                   null_ar, 
+    #                   np.nan)
+    
+    null_ar = np.where(null_ar >= step, 
                        null_ar, 
                        np.nan)
     
@@ -117,13 +120,13 @@ def determine_center_values(in_3x3_ar, step, nan_value):
     
     coord_list= []
     
-    # fetch min values, set min values to nan until all of array is nan
+    # fetch max values, set max values to nan until all of array is nan
     while not np.all(np.isnan(null_ar)):
         
-        min_value = np.nanmin(null_ar)
+        max_value = np.nanmax(null_ar)
         
         # returns 2 arrays, each array represents one axis
-        coordinates = np.where(null_ar == min_value)
+        coordinates = np.where(null_ar == max_value)
         
         # append all coordinates for min value to coords list. This affects cases
         # where two cells have identical values
@@ -752,18 +755,6 @@ class GridBuilder():
                                                       cost_method = self.cost_method, 
                                                       weight_method = self.weight_method)
         
-        
-        # list of values that can actually set a value to a cell later. Use list to skip values
-        # that will do nothing either way. 
-        self.pos_steps_set = set(list(range(1,self.total_max_value+1)))
-        
-        # flip_dict creates once a lookup table to determine how to switch large -> small values later
-        self.flip_dict = create_flip_dict(self.pos_steps_set)
-        
-        # get new max and min values after scaling
-        self.total_scaled_max_value = max(self.flip_dict.values())
-        self.total_scaled_min_value = min(self.flip_dict.values())
-        
         # set to store finished coords in
         self.done_coords_set = set()
     
@@ -828,10 +819,6 @@ class GridBuilder():
      
         while True:
             
-            if self.step < self.total_scaled_min_value:
-                self.step += 1
-                continue
-
             # make copy of input array. If this is still the same array at the end of the loop
             # process is finished and loop can be left
             old_arr = self.t_ar.copy()
@@ -859,7 +846,7 @@ class GridBuilder():
                 three_by_three_arr = get_3x3_array(self.t_ar, center_coords, self.nan_value)
                 
                 if len(np.unique(three_by_three_arr)) == 1:
-                    if self.step == self.total_scaled_min_value:
+                    if self.step == 1:
                         non_blank_coords_set.discard(center_coords)   
                     continue
                 
@@ -883,30 +870,13 @@ class GridBuilder():
                     else:
                         raise ValueError(f"weight_method must be either 'add' or 'multiply' but ''{self.weight_method}'' was given")
                 
-                # invert small array so large values become small to adhere to step logic
-                #inv_three_by_three_ar = invert_array_input(three_by_three_marr, 
-                #                                           self.nan_value, 
-                #                                           max_value=self.total_max_value)
-
-                # replace original values with inverted and scaled replacements
-                inv_three_by_three_ar = three_by_three_marr.copy()
-                for repl_val in np.unique(three_by_three_marr.data):
-                    if repl_val == self.nan_value:
-                        continue
-                    else:
-                        inv_three_by_three_ar = np.ma.where(inv_three_by_three_ar==repl_val, 
-                                                         self.flip_dict[repl_val],
-                                                         inv_three_by_three_ar)
-
-                
-                
                 # get a list of all cells that could set the center value
-                pos_coords_list = determine_center_values(inv_three_by_three_ar, self.step, self.nan_value)
+                pos_coords_list = determine_center_values(three_by_three_marr, self.step, self.nan_value)
                 if pos_coords_list is not None:
 
                     # check which of possbile many eligible cells is allowed by terrain rules to move to center coord
                     inherit_from_coord = transition_rules_outcome(full_rules_dict=self.full_transition_rules_dict, 
-                                             strength_3x3_ar=inv_three_by_three_ar,
+                                             strength_3x3_ar=three_by_three_marr,
                                              terrain_ar=self.terrain_ar, 
                                              pos_coords_list=pos_coords_list, 
                                              glob_center_coord=center_coords,
@@ -960,7 +930,7 @@ class GridBuilder():
             self.t_ar = set_arr.copy()
             
             # increase step, reduce step to 1 when max possible value has been reached
-            if self.step <= self.total_scaled_max_value:
+            if self.step <= self.total_max_value:
                 self.step = self.step+1
                 stop_after_step = False
             else:
@@ -981,9 +951,6 @@ class GridBuilder():
             if how == 'full':
                 if len(self.current_coords_set) == 0 or break_bc_no_change is True:
                     break
-                # end if array stays the same after full steps. But not if cost array exists
-                #if np.array_equal(old_arr, self.t_ar) and (self.step == self.total_scaled_max_value) and (self.skip_cost_array is True):
-                #    break
             elif how == 'step':
                 if (self.step - init_step) == by_amount or stop_after_step is True:
                     break
@@ -993,7 +960,7 @@ class GridBuilder():
             else:
                 raise ValueError(f"'how' must be full, step or epoch but {how} was given")
 
-            if self.step % min(self.total_scaled_max_value, 10) == 0:
+            if self.step % min(self.total_max_value, 10) == 0:
                 print((f"\rStep: {self.step}, Iteration: {self.iterations}, Epoch: {self.epoch}, "
                        f"Done Coords: {len(self.done_coords_set)} = {len(self.done_coords_set)/self.t_ar.size:.2f}, "
                        f" Current Coords: {len(self.current_coords_set):<6}")
