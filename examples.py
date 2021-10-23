@@ -29,7 +29,7 @@ plt.imsave("./examples/init_name_array.png", name_arr)
 # create name array, "naming" the kernels with a distinct ID
 cost_arr = np.ones(dimensions, dtype="int")
 cost_arr[25:50,63:79] = 2
-cost_arr[79:85,11:98] = 20
+cost_arr[90:91,11:98] = 20
 plt.imsave("./examples/init_cost_array.png", cost_arr)
 
 
