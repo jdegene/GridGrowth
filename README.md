@@ -53,9 +53,10 @@ The GridBuilder class has the following optional keywords you can use (you can s
 
 * **terrain_rules_dict** only has an effect if a :terrain_ar: is given. Values must be the same as in terrain_ar. Rules are read from:to ->
 	- 'only_allowed':{2:7} means that from type 2 only a transition to type 7 is allowed an no other. Non specified transitions are considered allowed
-	- 'limit_into' accepts a list of transition_to codes. All connections flowing INTO these codes will be set to 0 BUT can be overwritten by "only_allowed". Allows for bulk restriction of INTO rules.
+	- 'limit_into' accepts a list of transition_to codes. All cell strenghts flowing INTO these codes will be set to 0 and as such the cell cannot seed into neighbouring cells - BUT this can be overwritten by "only_allowed". Allows for bulk restriction of INTO rules.
+	- 'never_allowed' forbids transitions from:to 
 	- 'takes_precedence' rules overwrite strength rules, if other cell would be stronger and fill central value 'takes_precedence' and 'only_allowed' can contain overlapping items
-	- 'only_allowed', 'never_allowed' and 'takes_precedence' can have all have lists as items
+	- 'only_allowed', 'never_allowed' and 'takes_precedence' can have all have lists as items, you instead of {3:2, 3:1} you can write {3:[2,1]} etc.
 
 	Example Dictionary:
 	```
@@ -116,8 +117,8 @@ The following examples can be run self-contained by running examples.py
 | *[tarr] Barely visible init strength kernels with* | *[name_arr] Corresponding name arrays where kernels IDs are:* |
 | (0,9)=2, (57,95)=3, (99,99)=2 | (0,9)=10, (57,95)=25, (99,99)=50 |
 |:--:|:--:|
-| ![Init cost array](examples/init_cost_array.png) | |
-| *[cost_arr] Cost array where larger values inhibit expansion the larger the value* | |
+| ![Init cost array](examples/init_cost_array.png) | ![Init terrain array](examples/init_terrain_array.png) |
+| *[cost_arr] Cost array where larger values speed up expansion. The lower line has a value of 20, the upper rectangle of 10 * | *[terrain_arr] that encodes the terrain with IDs and works together with a terrain dictionary to set transition rules* |
 
 ### Simple Cases
 
@@ -211,3 +212,19 @@ The following examples can be run self-contained by running examples.py
 	| ![Full strength array](examples/ex8_output_strength_array.png) | ![Full name array](examples/ex8_output_name_array.png) | ![Full distance array](examples/ex8_output_distance_array.png) |
 	|:--:|:--:|:--:|
 	| *Strength array if kernels have 'assistance' from a [cost_arr]* | *Corresponding name array* | *Distance array with distance from kernels* |
+
+9) Load kernel strength array and different names array. Run full. Add a "cost array" and also apply transition rules on a terrain array. Imagine the rectangle from 8 was water (randomly chosen terrain ID = 1800). On the terrain array you can see there are two small additional rectangles to its north and south. Imagine these are harbours (randomly chosen terrain ID = 855). Normal land here has ID 1. Now we can add rules that disallow any transition from land to water and vice versa, except if there is a harbour:
+
+	```
+	trans_rules_dict = {'only_allowed': {855:[855,1800], 1800:[1,855,1800]}, 
+					  'limit_into': [],
+					  'never_allowed': {1:855}, # never allow from land to water directly
+					  'takes_precedence': {}}
+					  
+	grid = GridBuilder(tarr, t_names_ar=name_arr, cost_ar=cost_arr, cost_method = "add", terrain_ar=terrain_arr, 
+						terrain_rules_dict = trans_rules_dict)
+	grid.iterate_forward("full")
+	```
+	| ![Full strength array](examples/ex9_output_strength_array.png) | ![Full name array](examples/ex9_output_name_array.png) | ![Full distance array](examples/ex9_output_distance_array.png) |
+	|:--:|:--:|:--:|
+	| *Strength array if transition rules and a cost array are in place* | *Corresponding name array* | *Distance array with distance from kernels* |
