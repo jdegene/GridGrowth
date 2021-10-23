@@ -24,55 +24,55 @@ myArray = GridBuilder(tarr)
 myArray.iterate_forward()
 ```
 
-Et voila, myArray should not contain any NoData values anymore. Btw, the "t" in tarr stands for "traverse", which is why you will find it often throughout the code.
+Et voila, *myArray* should not contain any NoData values anymore. Btw, the "t" in tarr stands for "traverse", which is why you will find it often throughout the code.
 
 ## How it Works
 
-Yeah sorry, it is still slow and I have to think about optimization. But to implement all these nice features like terrain dependency, I need to iterate over each cell/pixel at least twice to determine if its value is known yet.
+Yeah sorry, it is still slow and I have to think about optimization. But to implement all these features like terrain dependency, I need to iterate over each cell/pixel at least twice to determine if its value is known yet.
 
-Let's say there are two kernels: one has strengh 3, one has strenth 1. Now if a cell has NoData but its neighbouring cell has strength 3, it will also have strength 3 in the next run and be assimilated into the kernel that initiaed the strengh 3. Neighouring cells to the kernel with strength 1 are however only updated every 3rd iteration, because they are only 1/3 as strong. 
+Let's say there are two kernels: one has strengh 3, one has strenth 1. Now if a cell has NoData but its neighbouring cell has strength 3, it will also have strength 3 in the next run and be assimilated into the kernel that initiated the strengh 3. Neighbouring cells to the kernel with strength 1 are however only updated every 3rd iteration, because they are only 1/3 as strong. 
 
-The modifiers (like terrain modifier or falloff) will alter these strenghts. If a NoData cell/pixel has several neighbour values that are eligible in the current iteration to assimilate this cell/pixel, the first value found will be used (= basically random determination).
+The modifiers (like terrain modifier or falloff) will alter these strenghts. The stronger the neighbour, the higher the chance it will set the cell. If a NoData cell/pixel has several neighbour values that are eligible in the current iteration to assimilate this cell/pixel, and all modifiers are exhausted, the first value found will be used (= basically random determination).
 
-Three terms are used to descrive traversing the grid:
-* **Iteration**: each iteration represents one full traversal of each pixel in the grid
+Three terms are used to describe traversing the grid:
+* **Iteration**: each iteration represents one full traversal of all current eligible pixels. Pixels/Cells are deemed eligible if their neighbour was set in the pass before. The first pass iterates over *all* pixels/cells.
 * **Step**: steps are incremented along Iterations, but reset to 1 once the maximum value is reached. In the above example with values 1 and 3, the step is returned to 1 every three iterations as all values had the chance to be set
 * **Epoch**: each time Step is reset to 1, the Epoch is incremented by 1. The increment of Epoch as such means, how often the least strong value had the chance to be set. 
 
 ## Options & Keywords
 
-The GridBuilder class has the following optional keywords you can use (you can substitute the following arrays with GeoTiffs if you are using GeoGridBuilder instead). 
+The GridBuilder class has the following optional keywords you can use (you can substitute the following arrays with GeoTiffs if you are using GeoGridBuilder instead, example below). 
 
 * **t_ar** The array containing the kernels and their strengths. Must be Integer type. Corresponding arrays (cost_ar, terrain_ar) must have the exact same dimensions.
 
-* **t_names_ar** is an array that initiates the names/ids of the kernels. If None, the original strength value of the kernel is used as its ID. If not given and two kernels with the same strength meet you will not be able to determine which was the seeding kernel later.
+* **t_names_ar** is an array that initiates the names/ids of the kernels. If None, the original strength value of the kernel is used as its ID. If not given and two kernels with the same strength meet you will not be able to determine which was the seeding kernel later (except maybe deriving it from the distance array).
 
-* **cost_ar** an array that has a value for all pixels that determines how "hard" it is to assimilate. Must be type INT. Higher values make the cell harder to assimilate. 
+* **cost_ar** an array that has a value for all pixels that determines how much traversal is sped up. Must be type INT. Higher values make the cell easier to assimilate. 
 
 * **cost_method** 'add' (default) or 'multiply'. Determines how "cost_ar" is handled. "add" will add it to the values of t_arr, "multiply" will multiply them.
 
 * **terrain_ar** an array that has coded terrain information. Only has an effect if a :terrain_rules_dict: is given as well
 
-* **terrain_rules_dict** only has an effect if a :terrain_ar: is given. Values must be the same as in terrain_ar. Rules are read from:to ->
-	- 'only_allowed':{2:7} means that from type 2 only a transition to type 7 is allowed an no other. Non specified transitions are considered allowed
+* **terrain_rules_dict** only has an effect if a :terrain_ar: is given. Is used internally to create a complete dictionary of 'from' every terrain 'to' every other terrain type. Values must be the same as in terrain_ar. Rules are read from:to ->
+	- 'only_allowed': {2:7} means that from type 2 only a transition to type 7 is allowed an no other. Non specified transitions are considered allowed
 	- 'limit_into' accepts a list of transition_to codes. All cell strenghts flowing INTO these codes will be set to 0 and as such the cell cannot seed into neighbouring cells - BUT this can be overwritten by "only_allowed". Allows for bulk restriction of INTO rules.
 	- 'never_allowed' forbids transitions from:to 
 	- 'takes_precedence' rules overwrite strength rules, if other cell would be stronger and fill central value 'takes_precedence' and 'only_allowed' can contain overlapping items
 	- 'only_allowed', 'never_allowed' and 'takes_precedence' can have all have lists as items, you instead of {3:2, 3:1} you can write {3:[2,1]} etc.
 
-	Example Dictionary:
+	Example Dictionary (keys are optional and you can only use the ones needed):
 	```
 	terrain_rules_dict = {'only_allowed': {2:3, 1:0},
-					'limit_into': [0],
-					'never_allowed': {3: [2,1]},
-					'takes_precedence': {0:1}}
+				'limit_into': [0],
+				'never_allowed': {3: [2,1]},
+				'takes_precedence': {0:1}}
 	```
 
-* **weight_ar** can be seen as a general directional effect. Must be a 3x3 array. Imagine as kind of a push factor, if all values in the 3x3 grid are 1 but the top left value is 5, then in all cases values coming from top left are over valued by a factor of 5. This can for example be used for modelling general "wind" effects.
+* **weight_ar** can be seen as a general directional effect. Must be a 3x3 array. Imagine as kind of a push factor, if all values in the 3x3 grid are 1 but the top left value is 5, then in all cases values coming from top left are overvalued by a factor of 5. This can for example be used for modelling general "wind" effects.
 
 * **weight_method** 'add' (default) or 'multiply'. Determines how "weight_ar is handled. "add" will add it to the values of t_arr, "multiply" will multiply them.
 
-* **nan_value** manually set the value in t_ar that is to be treated as NoData. If None the most prevalent value is used
+* **nan_value** manually set the value in t_ar that is to be treated as NoData. If None the most prevalent value is used.
 
 * **buffer_kernels_by** the number of cells around each kernel that are "reserved" by that kernel independent of other close by kernels
 
@@ -83,13 +83,10 @@ The GridBuilder class has the following optional keywords you can use (you can s
 	- "exp": value - dist ^ falloff_weight
 	- "log": math.log(dist, falloff_weight)
 
-* **falloff_weight** is used to calculate :falloff_type:. Can be float. If None:
+* **falloff_weight** is used to calculate :falloff_type:. Its influence is dependent on the function used. Can be float. If None:
 	- "linear": 1
 	- "exp": 2
 	- "log": math.e
-
-* **optimize_input** as the number of steps and as such iterations (full traversal over all cells/pixels) is determined by the maxium strength (including all modifiers) a large absolute value here will lead to "empty" iterations where no values are set. 
-If :optimize_output" is true, the strength value are tried to be reduced by determining their greatest common divisor and dividing all kernel strengths by it. An initial kernel setup of (40,50,300) is as such reduced to (4,5,30). The :falloff_weight: is reduced by the same amount BUT only supported for linear falloff.
 
 
 ## Using GeoTiffs
@@ -105,7 +102,7 @@ myArray.iterate_forward()
 myArray.save_to_geotiff("C:/OutputFolder/")
 ```
 
-As you can see, it will also handle saving the array it uses internally to a georeferenced GeoTiff. Btw the support for GeoTiffs is hardcoded for now, to use other GDAL supported raster formats is surely not a problem but for now not supported.
+You can see, it will also handle saving the array to a georeferenced GeoTiff. To do this all georeferening is taken from a mother-tif with the same dimensions/projection/etc. Btw the support for GeoTiffs is hardcoded for now, to use other GDAL supported raster formats is surely possbile somehow but not supported currently.
 
 
 ## Usage & Examples
