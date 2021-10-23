@@ -119,7 +119,7 @@ The following examples can be run self-contained by running examples.py
 
 | ![Init cost array](examples/init_cost_array.png) | ![Init terrain array](examples/init_terrain_array.png) |
 |:--:|:--:|
-| *[cost_arr] Cost array where larger values speed up expansion. The lower line has a value of 20, the upper rectangle of 10 * | *[terrain_arr] that encodes the terrain with IDs and works together with a terrain dictionary to set transition rules* |
+| *[cost_arr] Cost array where larger values speed up expansion. The lower line has a value of 20, the upper rectangle of 10* | *[terrain_arr] that encodes the terrain with IDs and works together with a terrain dictionary to set transition rules. Imagine the large rectangle water, the small dots next to it harbours* |
 
 ### Simple Cases
 
