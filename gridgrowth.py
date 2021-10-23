@@ -688,8 +688,7 @@ class GridBuilder():
         # Transition rules come in terrain_rules_dict. Can be None = all transitions allowed
         # Must have same shape as t_ar
         self.terrain_ar = terrain_ar
-        
-        
+                
         self.terrain_rules_dict = terrain_rules_dict
         if self.terrain_rules_dict is not None:
             self.full_transition_rules_dict = build_transition_rules_full(trans_rules_dict=self.terrain_rules_dict, 
@@ -701,7 +700,7 @@ class GridBuilder():
         # can be None
         self.weight_ar = weight_ar
 
-        # distance array that will keep track how far a pixel is away from original seed
+        # distance array that will keep track how far a pixel is away from original seed (line of sight distance, not 'travel' distance)
         self.dist_ar = np.zeros(self.shape, dtype="float")
         
         # have an array that tracks for each cell, from which coordinate it inherited its value from
@@ -725,6 +724,8 @@ class GridBuilder():
         self.iterations = 1 # total iterations, incremented each step
         self.epoch = 1 # is incremented each time step is rolled over
         
+        # calculate the max possible value that can be found in the array after all modifiers are applied
+        # Used to set back 'step' once exceeded
         self.total_max_value = get_possible_max_value(self.t_ar, 
                                                       self.nan_value,
                                                       self.cost_ar, 
@@ -732,7 +733,7 @@ class GridBuilder():
                                                       cost_method = self.cost_method, 
                                                       weight_method = self.weight_method)
         
-        # set to store finished coords in
+        # set to store coords in that have been set and can be assumed 'done'
         self.done_coords_set = set()
     
         # set a buffer around kernels they get regardless of their strength
@@ -793,15 +794,15 @@ class GridBuilder():
         # init a set to be filled with new coords. New coords are collected each step through the grid
         # and are populated by neighbouring NoData cells of those that were filled
         new_coords_set = set()
-     
+        
+        # main loop that iterates until :how: determines that there was enough iterating for today
         while True:
             
-            # make copy of input array. If this is still the same array at the end of the loop
-            # process is finished and loop can be left
-            old_arr = self.t_ar.copy()
+            # make copy of input array. Currently not in use, but was initially set up to stop iteration when nothing changes
+            # old_arr = self.t_ar.copy()
             
             # set values in set_arr, then at the end overwrite t_ar with set_arr
-            # dont write to array you are iterating over
+            # dont write to array you are iterating over!!
             set_arr = self.t_ar.copy()        
             
             # use this set to elimiate fully blank 3x3 grids so full grid only has to be run once
@@ -819,14 +820,17 @@ class GridBuilder():
                     ):
                     non_blank_coords_set.discard(center_coords) 
                     continue
-                                    
+                
+                # this array catches the vicinity of the cell to set
                 three_by_three_arr = get_3x3_array(self.t_ar, center_coords, self.nan_value)
                 
+                # skip arrays that are all still None or are already set
                 if len(np.unique(three_by_three_arr)) == 1:
                     if self.step == 1:
                         non_blank_coords_set.discard(center_coords)   
                     continue
                 
+                # mask the NoData value in the 3x3 array
                 three_by_three_marr = np.ma.masked_equal(three_by_three_arr, self.nan_value)
                                 
                 # add the weight of the center value of the cost array
@@ -866,7 +870,7 @@ class GridBuilder():
                     # convert local 3x3 coordinate into global system
                     inherit_from_coord_glob = local_coord_to_global( inherit_from_coord, center_coords, self.shape[0]-1, self.shape[1]-1)
                                         
-                    # set values
+                    # actually set values
                     if self.falloff_type is None:
                         set_arr[center_coords] = self.t_ar[inherit_from_coord_glob]
                     else:
@@ -875,6 +879,7 @@ class GridBuilder():
                                                           self.t_ar[inherit_from_coord_glob],
                                                           func_weight=self.falloff_weight)
                     
+                    # update all the other arrays with the repective values they inherit from the given coordinate
                     self.dist_inherit_ar[center_coords] = self.dist_inherit_ar[inherit_from_coord_glob]
                     self.dist_ar[center_coords] = calculate_distance(center_coords, self.dist_inherit_ar[center_coords])
                     
@@ -961,8 +966,7 @@ class GeoGridBuilder(GridBuilder):
         try: 
             geotiff_to_array
         except NameError:
-            from geo_data_handler import geotiff_to_array
-            
+            from geo_data_handler import geotiff_to_array            
         
         # init paths
         self.t_ar_tiff_fp = t_ar_tiff_fp
