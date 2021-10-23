@@ -783,6 +783,7 @@ class GridBuilder():
             raise ValueError(f"by_amount must be of type int but was {type(by_amount)}")
         
         init_step = self.step
+        init_iteration = self.iterations
         init_epoch = self.epoch
         
         # keep track of the done coords in the last 3 epochs. Use this to switch break_bc_no_change flag if nothing changes
@@ -926,6 +927,9 @@ class GridBuilder():
             
             if how == 'full':
                 if len(self.current_coords_set) == 0 or break_bc_no_change is True:
+                    break
+            elif how == 'iteration':
+                if (self.iterations - init_iteration) == by_amount:
                     break
             elif how == 'step':
                 if (self.step - init_step) == by_amount or stop_after_step is True:
