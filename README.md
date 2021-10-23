@@ -1,3 +1,5 @@
+![Init cost array](assets/Growth.gif)
+
 # GridGrowth
 
 Basically a kind of cell automaton that grows cells around pre-defined kernels. Using only Numpy a cell is updated purely defined by its neighbour values. Once set the cell does not change its value. Imagine a grid/raster where most cells/pixels are NoData and the values of those with data push outwards. These kernels are grown against each other until all boundary conditions are met or if no more NoData cells/pixels exist.
