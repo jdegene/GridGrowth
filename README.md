@@ -115,6 +115,9 @@ The following examples can be run self-contained by running examples.py
 |:--:|:--:|
 | *[tarr] Barely visible init strength kernels with* | *[name_arr] Corresponding name arrays where kernels IDs are:* |
 | (0,9)=2, (57,95)=3, (99,99)=2 | (0,9)=10, (57,95)=25, (99,99)=50 |
+|:--:|:--:|
+| ![Init cost array](examples/init_cost_array.png) | |
+| *[cost_arr] Cost array where larger values inhibit expansion the larger the value* | |
 
 ### Simple Cases
 
@@ -197,3 +200,14 @@ The following examples can be run self-contained by running examples.py
 	| ![Full strength array](examples/ex7_output_strength_array.png) | ![Full name array](examples/ex7_output_name_array.png) | ![Full distance array](examples/ex7_output_distance_array.png) |
 	|:--:|:--:|:--:|
 	| *Strength array with linear distance strength reduction* | *Corresponding name array* | *Distance array with distance from kernels* |
+	
+8) Load kernel strength array and different names array. Run full. Add a "cost array" where two areas exist that speed up the propagation if a kernel reaches them (higher values in cost array == higher speed)
+
+	```
+	grid = GridBuilder(tarr, t_names_ar=name_arr, cost_ar=cost_arr, cost_method = "add")
+	grid.iterate_forward("full")
+	```
+
+	| ![Full strength array](examples/ex8_output_strength_array.png) | ![Full name array](examples/ex8_output_name_array.png) | ![Full distance array](examples/ex8_output_distance_array.png) |
+	|:--:|:--:|:--:|
+	| *Strength array if kernels have 'assistance' from a [cost_arr]* | *Corresponding name array* | *Distance array with distance from kernels* |

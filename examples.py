@@ -26,6 +26,13 @@ name_arr[57,95] = 25
 name_arr[99,99] = 50
 plt.imsave("./examples/init_name_array.png", name_arr)
 
+# create name array, "naming" the kernels with a distinct ID
+cost_arr = np.ones(dimensions, dtype="int")
+cost_arr[25:50,63:79] = 2
+cost_arr[79:85,11:98] = 20
+plt.imsave("./examples/init_cost_array.png", cost_arr)
+
+
 
 # RUN ACTUAL EXAMPLES
 
@@ -95,3 +102,13 @@ grid.iterate_forward("full")
 plt.imsave("./examples/ex7_output_strength_array.png", grid.t_ar)
 plt.imsave("./examples/ex7_output_distance_array.png", grid.dist_ar)
 plt.imsave("./examples/ex7_output_name_array.png", grid.t_names_ar)
+
+
+# ex8) similar to 2 - load kernel strength array and different name array. Run full. 
+# Cost array redefines how fast kernels can expand
+grid = GridBuilder(tarr, t_names_ar=name_arr, cost_ar=cost_arr, cost_method = "add")
+grid.iterate_forward("full")
+
+plt.imsave("./examples/ex8_output_strength_array.png", grid.t_ar)
+plt.imsave("./examples/ex8_output_distance_array.png", grid.dist_ar)
+plt.imsave("./examples/ex8_output_name_array.png", grid.t_names_ar)
