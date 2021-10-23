@@ -496,7 +496,7 @@ def local_coord_to_global(in_coord, center_coord, max_x, max_y):
         return (new_coord_0, new_coord_1)
 
 
-def falloff(func_type, dist, value, func_weight=None, correct_by=1):
+def falloff(func_type, dist, value, func_weight=None):
     """ If called, will reduce an input :val: depending on its distance from original kernel
     
     Args:
@@ -517,7 +517,7 @@ def falloff(func_type, dist, value, func_weight=None, correct_by=1):
     if func_type == "linear":
         if func_weight is None:
             func_weight = 1
-        ret_val = value - dist * (func_weight/correct_by)
+        ret_val = value - dist * (func_weight)
     
     elif func_type == "exp":
         if func_weight is None:
@@ -562,7 +562,7 @@ def get_value_locs_in_3x3(in_3x3_ar, val, include_center = False):
 
 
 def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
-                   falloff_type=None, falloff_weight=None, in_inherit_ar=None, correct_by=1):
+                   falloff_type=None, falloff_weight=None, in_inherit_ar=None):
     """ Add a buffer around initial kernels to force immediate vicinty to belong to kernels
     
     Args:
@@ -572,8 +572,6 @@ def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
         :nan_value:     kernels are all values that are not nan_value
         :in_name_ar:    input name array, names of initial kernel will be updated 
         :in_dist_ar:    distance from initial kernel will be updated
-        :correct_by:    value to correct falloff_weight by. Is the same as gcd if value optimization is enabled
-                        or 1 by default (= no correction). This is necessary to scale falloff_weight along optimized values
     
     Return:
         Updated in_ar, in_name_ar and in_dist_ar
@@ -636,8 +634,7 @@ def buffer_kernels(in_ar, org_ar, nan_value, in_name_ar, in_dist_ar, by=None,
                                     out_ar[x,y] = falloff(falloff_type, 
                                                           dist,
                                                           kernel_strength,
-                                                          func_weight=falloff_weight,
-                                                          correct_by=correct_by)
+                                                          func_weight=falloff_weight)
                                 org_ar[x,y] = kernel_strength
                                 in_name_ar[x,y] = name
                                 in_dist_ar[x,y] = dist
@@ -657,8 +654,7 @@ class GridBuilder():
     
     def __init__(self, t_ar, t_names_ar=None, cost_ar=None, terrain_ar=None, weight_ar=None,
                  terrain_rules_dict = None, nan_value=None, weight_method = "add", cost_method = "add", 
-                 buffer_kernels_by=None, max_dist=None, falloff_type=None, falloff_weight=None, 
-                 optimize_input=False):
+                 buffer_kernels_by=None, max_dist=None, falloff_type=None, falloff_weight=None):
         
         # traverse array that gives the initial seeds. Should be of type non-negative int
         self.t_ar = t_ar.copy()   
@@ -716,26 +712,7 @@ class GridBuilder():
             self.nan_value = np.bincount(self.t_ar.reshape(-1)).argmax()
         else:
             self.nan_value = nan_value
-        
-        # optimize t_ar by reducing strength values so their relative difference remains the same
-        # but their absolute value is reduced. This reduces computation time
-        self.gcd = 1
-        self.optimize_input = optimize_input
-        if self.optimize_input == True:
-            uq_values_ar = np.unique(self.t_ar)
-            self.org_values_ar = np.delete(uq_values_ar, np.where(uq_values_ar== self.nan_value))
-            self.gcd = np.gcd.reduce(self.org_values_ar) # greatest common divisor to divide original values by
-            self.opt_values_ar = (self.org_values_ar / self.gcd).astype(int)
-        
-            for i, replace_val in enumerate(self.org_values_ar) :
-                self.t_ar = np.where(self.t_ar == replace_val, self.opt_values_ar[i], self.t_ar)
-            
-            # adapt cost and weight array equally
-            if len(np.unique(self.cost_ar)) > 1:
-                self.cost_ar = (self.cost_ar / self.gcd).round().astype(int)
-            if len(np.unique(self.weight_ar)) > 1:
-                self.weight_ar = (self.weight_ar / self.gcd).round().astype(int)
-        
+                
         self.weight_method = weight_method
         self.cost_method = cost_method 
         self.buffer_kernels_by = buffer_kernels_by
@@ -768,8 +745,7 @@ class GridBuilder():
                                                                                         by=self.buffer_kernels_by,
                                                                                         falloff_type=self.falloff_type,
                                                                                         falloff_weight=self.falloff_weight,
-                                                                                        in_inherit_ar=self.dist_inherit_ar,
-                                                                                        correct_by = self.gcd)
+                                                                                        in_inherit_ar=self.dist_inherit_ar)
         
             self.done_coords_set = self.done_coords_set | buf_kernels_set
         
@@ -975,7 +951,7 @@ class GeoGridBuilder(GridBuilder):
     
     def __init__(self, t_ar_tiff_fp, t_names_tiff_fp=None, cost_tiff_fp=None, terrain_tiff_fp=None, weight_tiff_fp=None,
                  terrain_rules_dict=None, nan_value=None, weight_method="add", cost_method="add", 
-                 buffer_kernels_by=None, max_dist=None, falloff_type=None, falloff_weight=None, optimize_input=False):
+                 buffer_kernels_by=None, max_dist=None, falloff_type=None, falloff_weight=None):
         
         # load geodata handling functions. Put in try/except to only load once even if method is called multiple times
         try: 
@@ -1001,8 +977,7 @@ class GeoGridBuilder(GridBuilder):
         # pass arguments to base class
         super().__init__(t_ar, t_names_ar=t_names_ar, cost_ar=cost_ar, terrain_ar=terrain_ar, weight_ar=weight_ar,
                  terrain_rules_dict=terrain_rules_dict, nan_value=nan_value, weight_method=weight_method, cost_method=cost_method, 
-                 buffer_kernels_by=buffer_kernels_by, max_dist=max_dist, falloff_type=falloff_type, falloff_weight=falloff_weight,
-                 optimize_input= optimize_input)
+                 buffer_kernels_by=buffer_kernels_by, max_dist=max_dist, falloff_type=falloff_type, falloff_weight=falloff_weight)
     
     def save_to_geotiff(self, save_fol, file_name=None, save_strength_file=True):
         """ Save the current state as a geotiff 
