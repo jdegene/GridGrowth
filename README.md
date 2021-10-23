@@ -125,7 +125,7 @@ The following examples can be run self-contained by running examples.py
 
 ### Simple Cases
 
-1) Load kernel strength array only and run in full without any additional. Name and strength array are the same\
+1) Load kernel strength array only and run in full without any additional options. Name and strength array are the same
 
 	```
 	grid = GridBuilder(tarr)
