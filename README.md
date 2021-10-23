@@ -24,7 +24,7 @@ myArray = GridBuilder(tarr)
 myArray.iterate_forward()
 ```
 
-Et voila, myArray should not contain any NoData values anymore. Btw, the "t" in tarr stands for "traverse", which is why you will find it often in the code as well.
+Et voila, myArray should not contain any NoData values anymore. Btw, the "t" in tarr stands for "traverse", which is why you will find it often throughout the code.
 
 ## How it Works
 
