@@ -792,7 +792,7 @@ class GridBuilder():
                     or
                     (self.t_ar[center_coords] != self.nan_value) and (self.t_names_ar[center_coords] )
                     or
-                    (self.cost_ar[center_coords] == 0)
+                    (self.cost_ar[center_coords] == 0 and self.cost_method=="multiply")
                     ):
                     non_blank_coords_set.discard(center_coords) 
                     continue
@@ -900,7 +900,9 @@ class GridBuilder():
             if how == 'full':
                 if len(self.current_coords_set) == 0:
                     break
-                if np.array_equal(old_arr, self.t_ar) and self.step == self.total_max_value:
+                # end if array stays the same after full steps. But not if cost array exists
+                if np.array_equal(old_arr, self.t_ar) and (self.step == self.total_max_value) and (self.skip_cost_array is True):
+                    print("Hello")
                     break
             elif how == 'step':
                 if (self.step - init_step) == by_amount or stop_after_step is True:
