@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+geo_examply.py
 
 # C extensions
 *.so
